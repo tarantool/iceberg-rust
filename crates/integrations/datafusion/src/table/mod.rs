@@ -28,7 +28,6 @@ use datafusion::catalog::Session;
 use datafusion::common::DataFusionError;
 use datafusion::datasource::{TableProvider, TableType};
 use datafusion::error::Result as DFResult;
-use datafusion::logical_expr::dml::InsertOp;
 use datafusion::logical_expr::{Expr, TableProviderFilterPushDown};
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::coalesce_partitions::CoalescePartitionsExec;
@@ -175,7 +174,7 @@ impl TableProvider for IcebergTableProvider {
         &self,
         state: &dyn Session,
         input: Arc<dyn ExecutionPlan>,
-        _insert_op: InsertOp,
+        _overwrite: bool,
     ) -> DFResult<Arc<dyn ExecutionPlan>> {
         let Some(catalog) = self.catalog.clone() else {
             return Err(DataFusionError::Execution(

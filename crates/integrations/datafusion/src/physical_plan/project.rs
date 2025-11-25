@@ -17,6 +17,7 @@
 
 //! Partition value projection for Iceberg tables.
 
+use std::hash;
 use std::sync::Arc;
 
 use datafusion::arrow::array::RecordBatch;
@@ -106,6 +107,14 @@ impl PartialEq for PartitionExpr {
 
 impl Eq for PartitionExpr {}
 
+// Required for [`PhysicalExpr`] implementation.
+// Based on this code: https://docs.rs/datafusion-expr-common/51.0.0/src/datafusion_expr_common/dyn_eq.rs.html#37
+impl PartialEq<dyn std::any::Any> for PartitionExpr {
+    fn eq(&self, other: &dyn std::any::Any) -> bool {
+        other.downcast_ref::<Self>() == Some(self)
+    }
+}
+
 impl PhysicalExpr for PartitionExpr {
     fn as_any(&self) -> &dyn std::any::Any {
         self
@@ -138,14 +147,8 @@ impl PhysicalExpr for PartitionExpr {
         Ok(self)
     }
 
-    fn fmt_sql(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let field_names: Vec<String> = self
-            .partition_spec
-            .fields()
-            .iter()
-            .map(|pf| format!("{}({})", pf.transform, pf.name))
-            .collect();
-        write!(f, "iceberg_partition_values[{}]", field_names.join(", "))
+    fn dyn_hash(&self, mut state: &mut dyn hash::Hasher) {
+        hash::Hash::hash(&self, &mut state);
     }
 }
 

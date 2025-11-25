@@ -39,9 +39,7 @@ use parquet::arrow::arrow_reader::{
 };
 use parquet::arrow::async_reader::AsyncFileReader;
 use parquet::arrow::{PARQUET_FIELD_ID_META_KEY, ParquetRecordBatchStreamBuilder, ProjectionMask};
-use parquet::file::metadata::{
-    PageIndexPolicy, ParquetMetaData, ParquetMetaDataReader, RowGroupMetaData,
-};
+use parquet::file::metadata::{ParquetMetaData, ParquetMetaDataReader, RowGroupMetaData};
 use parquet::schema::types::{SchemaDescriptor, Type as ParquetType};
 
 use crate::arrow::caching_delete_file_loader::CachingDeleteFileLoader;
@@ -1679,28 +1677,24 @@ impl<R: FileRead> ArrowFileReader<R> {
 }
 
 impl<R: FileRead> AsyncFileReader for ArrowFileReader<R> {
-    fn get_bytes(&mut self, range: Range<u64>) -> BoxFuture<'_, parquet::errors::Result<Bytes>> {
+    fn get_bytes(&mut self, range: Range<usize>) -> BoxFuture<'_, parquet::errors::Result<Bytes>> {
         Box::pin(
             self.r
-                .read(range.start..range.end)
+                .read(range.start as u64..range.end as u64)
                 .map_err(|err| parquet::errors::ParquetError::External(Box::new(err))),
         )
     }
 
     // TODO: currently we don't respect `ArrowReaderOptions` cause it don't expose any method to access the option field
     // we will fix it after `v55.1.0` is released in https://github.com/apache/arrow-rs/issues/7393
-    fn get_metadata(
-        &mut self,
-        _options: Option<&'_ ArrowReaderOptions>,
-    ) -> BoxFuture<'_, parquet::errors::Result<Arc<ParquetMetaData>>> {
+    fn get_metadata(&mut self) -> BoxFuture<'_, parquet::errors::Result<Arc<ParquetMetaData>>> {
         async move {
             let reader = ParquetMetaDataReader::new()
                 .with_prefetch_hint(self.metadata_size_hint)
-                // Set the page policy first because it updates both column and offset policies.
-                .with_page_index_policy(PageIndexPolicy::from(self.preload_page_index))
-                .with_column_index_policy(PageIndexPolicy::from(self.preload_column_index))
-                .with_offset_index_policy(PageIndexPolicy::from(self.preload_offset_index));
-            let size = self.meta.size;
+                .with_column_indexes(self.preload_column_index)
+                .with_page_indexes(self.preload_page_index)
+                .with_offset_indexes(self.preload_offset_index);
+            let size = self.meta.size as usize;
             let meta = reader.load_and_finish(self, size).await?;
 
             Ok(Arc::new(meta))

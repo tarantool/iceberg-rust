@@ -20,5 +20,6 @@
 #
 # The channel is exactly same day for our MSRV.
 [toolchain]
-channel = "nightly-2025-03-28"
-components = ["rustfmt", "clippy"]
+channel = "1.89.0"
+# channel = "nightly-2025-03-28"
+# components = ["rustfmt", "clippy"]

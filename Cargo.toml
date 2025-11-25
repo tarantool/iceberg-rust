@@ -23,7 +23,6 @@ members = [
   "crates/iceberg",
   "crates/integration_tests",
   "crates/integrations/*",
-  "crates/sqllogictest",
   "crates/test_utils",
 ]
 resolver = "2"
@@ -42,14 +41,6 @@ rust-version = "1.87"
 anyhow = "1.0.72"
 apache-avro = { version = "0.20", features = ["zstandard"] }
 array-init = "2"
-arrow-arith = "56.2"
-arrow-array = "56.2"
-arrow-buffer = "56.2"
-arrow-cast = "56.2"
-arrow-ord = "56.2"
-arrow-schema = "56.2"
-arrow-select = "56.2"
-arrow-string = "56.2"
 as-any = "0.3.2"
 async-trait = "0.1.89"
 aws-config = "1.8.7"
@@ -62,9 +53,6 @@ bytes = "1.10"
 chrono = "0.4.41"
 clap = { version = "4.5.48", features = ["derive", "cargo"] }
 ctor = "0.2.8"
-datafusion = "50"
-datafusion-cli = "50"
-datafusion-sqllogictest = "50"
 derive_builder = "0.20"
 dirs = "6"
 enum-ordinalize = "4.3.0"
@@ -101,7 +89,6 @@ num-bigint = "0.4.6"
 once_cell = "1.20"
 opendal = "0.54.0"
 ordered-float = "4"
-parquet = "56.2"
 pilota = "0.11.10"
 port_scanner = "0.1.5"
 pretty_assertions = "1.4"
@@ -133,3 +120,25 @@ uuid = { version = "1.18", features = ["v7"] }
 volo = "0.10.6"
 volo-thrift = "0.10.8"
 zstd = "0.13.3"
+
+# Group of arrow dependencies -- all should be of the same version as in bound DF version (all were 56.2).
+arrow-arith = "54.0.0"
+arrow-array = "54.0.0"
+arrow-buffer = "54.0.0"
+arrow-cast = "54.0.0"
+arrow-ord = "54.0.0"
+arrow-schema = "54.0.0"
+arrow-select = "54.0.0"
+arrow-string = "54.0.0"
+parquet = "54.0.0"
+
+# Group of DF dependencies (all were 50).
+datafusion = "42.0.0"
+# datafusion-cli = "42.0.0"
+# datafusion-sqllogictest = "42.0.0"
+
+# Patches for group of DF dependencies.
+[patch.crates-io]
+datafusion = { git = "https://github.com/tarantool/datafusion.git", branch = "release-42.0.0" }
+# datafusion-cli = { git = "https://github.com/tarantool/datafusion.git", branch = "release-42.0.0" }
+# datafusion-sqllogictest = { git = "https://github.com/tarantool/datafusion.git", branch = "release-42.0.0" }

@@ -241,10 +241,9 @@ mod tests {
             options: Default::default(),
             table_partition_cols: Default::default(),
             order_exprs: Default::default(),
-            constraints: Constraints::default(),
+            constraints: Constraints::empty(),
             column_defaults: Default::default(),
             if_not_exists: Default::default(),
-            temporary: false,
             definition: Default::default(),
             unbounded: Default::default(),
         }

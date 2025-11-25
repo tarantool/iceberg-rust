@@ -17,7 +17,7 @@
 
 use datafusion::catalog::TableProvider;
 use datafusion::physical_expr::EquivalenceProperties;
-use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
+use datafusion::physical_plan::execution_plan::ExecutionMode;
 use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
 use datafusion::physical_plan::{DisplayAs, ExecutionPlan, Partitioning, PlanProperties};
 use futures::TryStreamExt;
@@ -35,8 +35,7 @@ impl IcebergMetadataScan {
         let properties = PlanProperties::new(
             EquivalenceProperties::new(provider.schema()),
             Partitioning::UnknownPartitioning(1),
-            EmissionType::Incremental,
-            Boundedness::Bounded,
+            ExecutionMode::Bounded,
         );
         Self {
             provider,

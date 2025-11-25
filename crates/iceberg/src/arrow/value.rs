@@ -348,10 +348,10 @@ impl SchemaWithPartnerVisitor<ArrayRef> for ArrowArrayToIcebergStructConverter {
                 } else if let Some(array) = partner.as_any().downcast_ref::<StringArray>() {
                     Ok(array.iter().map(|v| v.map(Literal::string)).collect())
                 } else {
-                    return Err(Error::new(
+                    Err(Error::new(
                         ErrorKind::DataInvalid,
                         "The partner is not a string array",
-                    ));
+                    ))
                 }
             }
             PrimitiveType::Uuid => {
@@ -415,10 +415,10 @@ impl SchemaWithPartnerVisitor<ArrayRef> for ArrowArrayToIcebergStructConverter {
                         .map(|v| v.map(|v| Literal::binary(v.to_vec())))
                         .collect())
                 } else {
-                    return Err(Error::new(
+                    Err(Error::new(
                         ErrorKind::DataInvalid,
                         "The partner is not a binary array",
-                    ));
+                    ))
                 }
             }
         }

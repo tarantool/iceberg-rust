@@ -17,6 +17,7 @@
 
 use std::any::Any;
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::Arc;
 
 use datafusion::catalog::{CatalogProvider, SchemaProvider};
@@ -30,12 +31,25 @@ use crate::schema::IcebergSchemaProvider;
 ///
 /// Acts as a centralized catalog provider that aggregates
 /// multiple [`SchemaProvider`], each associated with distinct namespaces.
-#[derive(Debug)]
 pub struct IcebergCatalogProvider {
     /// A `HashMap` where keys are namespace names
     /// and values are dynamic references to objects implementing the
     /// [`SchemaProvider`] trait.
     schemas: HashMap<String, Arc<dyn SchemaProvider>>,
+}
+
+impl fmt::Debug for IcebergCatalogProvider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut show = f.debug_map();
+        for (name, schema_provider) in &self.schemas {
+            let as_any = schema_provider.as_any();
+            match as_any.downcast_ref::<IcebergSchemaProvider>() {
+                Some(iceberg) => show.entry(name, iceberg),
+                None => show.entry(name, &as_any.type_id()),
+            };
+        }
+        show.finish()
+    }
 }
 
 impl IcebergCatalogProvider {

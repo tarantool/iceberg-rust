@@ -26,7 +26,7 @@ use datafusion::arrow::datatypes::{
 use datafusion::common::{DataFusionError, Result as DFResult};
 use datafusion::execution::{SendableRecordBatchStream, TaskContext};
 use datafusion::physical_expr::{EquivalenceProperties, Partitioning};
-use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
+use datafusion::physical_plan::execution_plan::ExecutionMode;
 use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
 use datafusion::physical_plan::{DisplayAs, DisplayFormatType, ExecutionPlan, PlanProperties};
 use futures::StreamExt;
@@ -76,8 +76,7 @@ impl IcebergCommitExec {
         PlanProperties::new(
             EquivalenceProperties::new(schema),
             Partitioning::UnknownPartitioning(1),
-            EmissionType::Final,
-            Boundedness::Bounded,
+            ExecutionMode::Bounded,
         )
     }
 
@@ -86,10 +85,7 @@ impl IcebergCommitExec {
         let count_array = Arc::new(UInt64Array::from(vec![count])) as ArrayRef;
 
         RecordBatch::try_from_iter_with_nullable(vec![("count", count_array, false)]).map_err(|e| {
-            DataFusionError::ArrowError(
-                Box::new(e),
-                Some("Failed to make count batch!".to_string()),
-            )
+            DataFusionError::ArrowError(e, Some("Failed to make count batch!".to_string()))
         })
     }
 
@@ -116,9 +112,6 @@ impl DisplayAs for IcebergCommitExec {
                     self.table.identifier(),
                     self.schema
                 )
-            }
-            DisplayFormatType::TreeRender => {
-                write!(f, "IcebergCommitExec: table={}", self.table.identifier())
             }
         }
     }
@@ -280,7 +273,7 @@ mod tests {
     use datafusion::execution::context::TaskContext;
     use datafusion::physical_expr::{EquivalenceProperties, Partitioning};
     use datafusion::physical_plan::common::collect;
-    use datafusion::physical_plan::execution_plan::Boundedness;
+    use datafusion::physical_plan::execution_plan::ExecutionMode;
     use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
     use datafusion::physical_plan::{DisplayAs, DisplayFormatType, ExecutionPlan, PlanProperties};
     use datafusion::prelude::*;
@@ -315,8 +308,7 @@ mod tests {
             let plan_properties = PlanProperties::new(
                 EquivalenceProperties::new(schema.clone()),
                 Partitioning::UnknownPartitioning(1),
-                EmissionType::Final,
-                Boundedness::Bounded,
+                ExecutionMode::Bounded,
             );
 
             Self {
@@ -377,9 +369,7 @@ mod tests {
     impl DisplayAs for MockWriteExec {
         fn fmt_as(&self, t: DisplayFormatType, f: &mut Formatter) -> fmt::Result {
             match t {
-                DisplayFormatType::Default
-                | DisplayFormatType::Verbose
-                | DisplayFormatType::TreeRender => {
+                DisplayFormatType::Default | DisplayFormatType::Verbose => {
                     write!(f, "MockDataFilesExec: files={}", self.data_files_json.len())
                 }
             }
