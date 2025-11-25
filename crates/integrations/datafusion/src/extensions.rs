@@ -12,10 +12,10 @@ impl crate::IcebergTableProvider {
     /// and the catalog should be the one that table was created in.
     /// We don't guarantee correct work of the system if those requirements are not met.
     /// 
-    /// Current code state doesn't provide any "original" way to create a [`crate::IcebergTableProvider`] 
-    /// bound with [`iceberg::Catalog`] implementation the related table was created within.
-    /// But [`crate::IcebergTableProvider`] has a dedicated field (`Option<_>`), and it should have 
-    /// `Some(_)` value for [`datafusion::catalog::TableProvider`] method `insert_into` to work properly.
+    /// Current implementation lacks a native way to create a [`crate::IcebergTableProvider`]
+    /// bound to the specific [`iceberg::Catalog`] that table is originated from.
+    /// However, [`crate::IcebergTableProvider`] has an optional field `catalog` that must be populated
+    /// for [`datafusion::catalog::TableProvider`] method `insert_into` to work correctly.
     pub fn new_from_parts(
         table: table::Table,
         schema: datatypes::SchemaRef,
