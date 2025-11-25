@@ -1,5 +1,5 @@
 //! This module contains a variety of extensions, including different extra functions and methods,
-//! for types and primitives defined in the rest, "origin" part if the crate.
+//! for types and primitives defined in the rest, "origin" part of the crate.
 //! It should help while migrating onto newer versions of the libraries group.
 use std::sync;
 
