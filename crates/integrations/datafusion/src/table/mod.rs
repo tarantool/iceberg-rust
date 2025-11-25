@@ -48,13 +48,13 @@ use crate::physical_plan::write::IcebergWriteExec;
 #[derive(Debug, Clone)]
 pub struct IcebergTableProvider {
     /// A table in the catalog.
-    table: Table,
+    pub(crate) table: Table,
     /// Table snapshot id that will be queried via this provider.
-    snapshot_id: Option<i64>,
+    pub(crate) snapshot_id: Option<i64>,
     /// A reference-counted arrow `Schema`.
-    schema: ArrowSchemaRef,
+    pub(crate) schema: ArrowSchemaRef,
     /// The catalog that the table belongs to.
-    catalog: Option<Arc<dyn Catalog>>,
+    pub(crate) catalog: Option<Arc<dyn Catalog>>,
 }
 
 impl IcebergTableProvider {
