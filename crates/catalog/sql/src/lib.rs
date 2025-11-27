@@ -59,3 +59,5 @@
 mod catalog;
 mod error;
 pub use catalog::*;
+
+mod extensions;
