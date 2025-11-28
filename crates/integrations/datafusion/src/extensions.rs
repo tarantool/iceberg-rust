@@ -11,7 +11,7 @@ impl crate::IcebergTableProvider {
     /// Passed schema should match the one used while creating the table,
     /// and the catalog should be the one that table was created in.
     /// We don't guarantee correct work of the system if those requirements are not met.
-    /// 
+    ///
     /// Current implementation lacks a native way to create a [`crate::IcebergTableProvider`]
     /// bound to the specific [`iceberg::Catalog`] that table is originated from.
     /// However, [`crate::IcebergTableProvider`] has an optional field `catalog` that must be populated

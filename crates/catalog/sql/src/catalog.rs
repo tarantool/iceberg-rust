@@ -41,21 +41,25 @@ pub const SQL_CATALOG_PROP_WAREHOUSE: &str = "warehouse";
 /// catalog sql bind style
 pub const SQL_CATALOG_PROP_BIND_STYLE: &str = "sql_bind_style";
 
-static CATALOG_TABLE_NAME: &str = "iceberg_tables";
-static CATALOG_FIELD_CATALOG_NAME: &str = "catalog_name";
-static CATALOG_FIELD_TABLE_NAME: &str = "table_name";
-static CATALOG_FIELD_TABLE_NAMESPACE: &str = "table_namespace";
-static CATALOG_FIELD_METADATA_LOCATION_PROP: &str = "metadata_location";
-static CATALOG_FIELD_PREVIOUS_METADATA_LOCATION_PROP: &str = "previous_metadata_location";
-static CATALOG_FIELD_RECORD_TYPE: &str = "iceberg_type";
-static CATALOG_FIELD_TABLE_RECORD_TYPE: &str = "TABLE";
+pub(crate) mod constants {
+    pub static CATALOG_TABLE_NAME: &str = "iceberg_tables";
+    pub static CATALOG_FIELD_CATALOG_NAME: &str = "catalog_name";
+    pub static CATALOG_FIELD_TABLE_NAME: &str = "table_name";
+    pub static CATALOG_FIELD_TABLE_NAMESPACE: &str = "table_namespace";
+    pub static CATALOG_FIELD_METADATA_LOCATION_PROP: &str = "metadata_location";
+    pub static CATALOG_FIELD_PREVIOUS_METADATA_LOCATION_PROP: &str = "previous_metadata_location";
+    pub static CATALOG_FIELD_RECORD_TYPE: &str = "iceberg_type";
+    pub static CATALOG_FIELD_TABLE_RECORD_TYPE: &str = "TABLE";
 
-static NAMESPACE_TABLE_NAME: &str = "iceberg_namespace_properties";
-static NAMESPACE_FIELD_NAME: &str = "namespace";
-static NAMESPACE_FIELD_PROPERTY_KEY: &str = "property_key";
-static NAMESPACE_FIELD_PROPERTY_VALUE: &str = "property_value";
+    pub static NAMESPACE_TABLE_NAME: &str = "iceberg_namespace_properties";
+    pub static NAMESPACE_FIELD_NAME: &str = "namespace";
+    pub static NAMESPACE_FIELD_PROPERTY_KEY: &str = "property_key";
+    pub static NAMESPACE_FIELD_PROPERTY_VALUE: &str = "property_value";
 
-static NAMESPACE_LOCATION_PROPERTY_KEY: &str = "location";
+    pub static NAMESPACE_LOCATION_PROPERTY_KEY: &str = "location";
+}
+
+use constants::*;
 
 static MAX_CONNECTIONS: u32 = 10; // Default the SQL pool to 10 connections if not provided
 static IDLE_TIMEOUT: u64 = 10; // Default the maximum idle timeout per connection to 10s before it is closed
@@ -136,8 +140,6 @@ impl CatalogBuilder for SqlCatalogBuilder {
         name: impl Into<String>,
         props: HashMap<String, String>,
     ) -> impl Future<Output = Result<Self::C>> + Send {
-        let name = name.into();
-
         for (k, v) in props {
             self.0.props.insert(k, v);
         }
@@ -158,8 +160,10 @@ impl CatalogBuilder for SqlCatalogBuilder {
             }
         }
 
+        let name = name.into().trim().to_owned();
+
         async move {
-            if name.trim().is_empty() {
+            if name.is_empty() {
                 Err(Error::new(
                     ErrorKind::DataInvalid,
                     "Catalog name cannot be empty",
@@ -175,6 +179,7 @@ impl CatalogBuilder for SqlCatalogBuilder {
                     ),
                 ))
             } else {
+                self.0.name = name;
                 SqlCatalog::new(self.0).await
             }
         }
@@ -201,7 +206,8 @@ struct SqlCatalogConfig {
 #[derive(Debug)]
 /// Sql catalog implementation.
 pub struct SqlCatalog {
-    name: String,
+    /// Name of current catalog instance.
+    pub(crate) name: String,
     connection: AnyPool,
     warehouse_location: String,
     fileio: FileIO,
@@ -304,7 +310,11 @@ impl SqlCatalog {
     }
 
     /// Fetch a vec of AnyRows from a given query
-    async fn fetch_rows(&self, query: &str, args: Vec<Option<&str>>) -> Result<Vec<AnyRow>> {
+    pub(crate) async fn fetch_rows(
+        &self,
+        query: &str,
+        args: Vec<Option<&str>>,
+    ) -> Result<Vec<AnyRow>> {
         let query_with_placeholders = self.replace_placeholders(query);
 
         let mut sqlx_query = sqlx::query(&query_with_placeholders);
@@ -319,7 +329,7 @@ impl SqlCatalog {
     }
 
     /// Execute statements in a transaction, provided or not
-    async fn execute(
+    pub(crate) async fn execute(
         &self,
         query: &str,
         args: Vec<Option<&str>>,
@@ -733,10 +743,6 @@ impl Catalog for SqlCatalog {
     }
 
     async fn load_table(&self, identifier: &TableIdent) -> Result<Table> {
-        if !self.table_exists(identifier).await? {
-            return no_such_table_err(identifier);
-        }
-
         let rows = self
             .fetch_rows(
                 &format!(
@@ -917,11 +923,8 @@ impl Catalog for SqlCatalog {
             .build()?)
     }
 
-    async fn update_table(&self, _commit: TableCommit) -> Result<Table> {
-        Err(Error::new(
-            ErrorKind::FeatureUnsupported,
-            "Updating a table is not supported yet",
-        ))
+    async fn update_table(&self, commit: TableCommit) -> Result<Table> {
+        self.apply_table_update(commit).await
     }
 }
 
