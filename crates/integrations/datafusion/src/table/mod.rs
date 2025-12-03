@@ -154,7 +154,7 @@ impl TableProvider for IcebergTableProvider {
         _limit: Option<usize>,
     ) -> DFResult<Arc<dyn ExecutionPlan>> {
         Ok(Arc::new(IcebergTableScan::new(
-            self.table.clone(),
+            self.table_to_use().await?, // This automatically updates available snapshots when starting a scan.
             self.snapshot_id,
             self.schema.clone(),
             projection,
