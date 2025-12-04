@@ -4,6 +4,7 @@
 use std::sync;
 
 use datafusion::arrow::datatypes;
+use datafusion::error;
 use iceberg::table;
 
 impl crate::IcebergTableProvider {
@@ -26,6 +27,18 @@ impl crate::IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: Some(catalog),
+        }
+    }
+
+    /// Returns table to be used in operations.
+    /// If the catalog implementer is provided, loads a fresh table from it, otherwise clones the inner value.
+    pub(crate) async fn table_to_use(&self) -> error::Result<table::Table> {
+        match self.catalog {
+            Some(ref catalog) => catalog
+                .load_table(self.table.identifier())
+                .await
+                .map_err(|e| error::DataFusionError::Internal(e.to_string())),
+            None => Ok(self.table.clone()),
         }
     }
 }
