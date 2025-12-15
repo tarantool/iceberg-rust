@@ -37,6 +37,7 @@ use iceberg::table::Table;
 use iceberg::{Catalog, Error, ErrorKind, NamespaceIdent, Result, TableIdent};
 use metadata_table::IcebergMetadataTableProvider;
 
+use crate::extensions;
 use crate::physical_plan::commit::IcebergCommitExec;
 use crate::physical_plan::project::project_with_partition;
 use crate::physical_plan::repartition::repartition;
@@ -55,6 +56,8 @@ pub struct IcebergTableProvider {
     pub(crate) schema: ArrowSchemaRef,
     /// The catalog that the table belongs to.
     pub(crate) catalog: Option<Arc<dyn Catalog>>,
+    /// Receiver of the snapshot id value; when set is updated after every full (run to completion) insert_into() execution.
+    pub(crate) shared_snapshot_id: Option<extensions::SharedSnapshotId>,
 }
 
 impl IcebergTableProvider {
@@ -64,8 +67,10 @@ impl IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: None,
+            shared_snapshot_id: None,
         }
     }
+
     /// Asynchronously tries to construct a new [`IcebergTableProvider`]
     /// using the given client and table name to fetch an actual [`Table`]
     /// in the provided namespace.
@@ -84,6 +89,7 @@ impl IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: Some(client),
+            shared_snapshot_id: None,
         })
     }
 
@@ -96,6 +102,7 @@ impl IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: None,
+            shared_snapshot_id: None,
         })
     }
 
@@ -121,6 +128,7 @@ impl IcebergTableProvider {
             snapshot_id: Some(snapshot_id),
             schema,
             catalog: None,
+            shared_snapshot_id: None,
         })
     }
 
@@ -214,12 +222,18 @@ impl TableProvider for IcebergTableProvider {
         // Merge the outputs of write_plan into one so we can commit all files together
         let coalesce_partitions = Arc::new(CoalescePartitionsExec::new(write_plan));
 
-        Ok(Arc::new(IcebergCommitExec::new(
+        let mut commit = IcebergCommitExec::new(
             self.table.clone(),
             catalog,
             coalesce_partitions,
             self.schema.clone(),
-        )))
+        );
+
+        if let Some(ref snapshot_id_watcher) = self.shared_snapshot_id {
+            commit = commit.with_shared_snapshot_id(snapshot_id_watcher.clone());
+        }
+
+        Ok(Arc::new(commit))
     }
 }
 
