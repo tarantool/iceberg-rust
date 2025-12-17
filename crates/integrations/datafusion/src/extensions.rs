@@ -22,12 +22,13 @@ impl crate::IcebergTableProvider {
     /// for [`datafusion::catalog::TableProvider`] method `insert_into` to work correctly.
     pub fn new_from_parts(
         table: table::Table,
+        snapshot_id: Option<i64>,
         schema: datatypes::SchemaRef,
         catalog: sync::Arc<dyn iceberg::Catalog>,
     ) -> Self {
         Self {
             table,
-            snapshot_id: None,
+            snapshot_id,
             schema,
             catalog: Some(catalog),
             shared_snapshot_id: None,
