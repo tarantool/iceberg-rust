@@ -36,14 +36,32 @@ impl crate::IcebergTableProvider {
     }
 
     /// Returns table to be used in operations.
-    /// If the catalog implementer is provided, loads a fresh table from it, otherwise clones the inner value.
+    /// If there is no catalog provider, returns a clone of the table stored within.
+    /// If there is some catalog provider, gets either explicitly specified snapshot id value or set shared value.
+    /// If has needed snapshot id and the table stored within has such snapshot, retuns clone of that table.
+    /// Otherwise loads table from the catalog and returns it.
     pub(crate) async fn table_to_use(&self) -> error::Result<table::Table> {
-        match self.catalog {
-            Some(ref catalog) => catalog
+        let Some(ref catalog) = self.catalog else {
+            return Ok(self.table.clone());
+        };
+
+        let has_needed_snapshot = self
+            .snapshot_id
+            .or_else(|| {
+                self.shared_snapshot_id
+                    .as_ref()
+                    .and_then(|ssid| ssid.get_value(None))
+            })
+            .and_then(|snapshot_id| self.table.metadata().snapshot_by_id(snapshot_id))
+            .is_some();
+
+        if has_needed_snapshot {
+            Ok(self.table.clone())
+        } else {
+            catalog
                 .load_table(self.table.identifier())
                 .await
-                .map_err(|e| error::DataFusionError::Internal(e.to_string())),
-            None => Ok(self.table.clone()),
+                .map_err(|e| error::DataFusionError::Internal(e.to_string()))
         }
     }
 
