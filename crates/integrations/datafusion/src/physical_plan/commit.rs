@@ -186,7 +186,7 @@ impl ExecutionPlan for IcebergCommitExec {
 
         let catalog = Arc::clone(&self.catalog);
 
-        let snapshot_id_watcher = self.shared_snapshot_id.clone();
+        let shared_snapshot_id = self.shared_snapshot_id.clone();
 
         // Process the input streams from all partitions and commit the data files
         let stream = futures::stream::once(async move {
@@ -256,7 +256,7 @@ impl ExecutionPlan for IcebergCommitExec {
 
             let result_batch = Self::make_count_batch(total_record_count)?;
 
-            Self::update_shared_snapshot_id(snapshot_id_watcher, &updated_table);
+            Self::update_shared_snapshot_id(shared_snapshot_id, &updated_table);
 
             Ok(result_batch)
         })

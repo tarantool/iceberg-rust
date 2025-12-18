@@ -31,7 +31,7 @@ impl crate::IcebergTableProvider {
             snapshot_id,
             schema,
             catalog: Some(catalog),
-            shared_snapshot_id: None,
+            shared_snapshot_id: sync::OnceLock::new(),
         }
     }
 
@@ -49,7 +49,7 @@ impl crate::IcebergTableProvider {
             .snapshot_id
             .or_else(|| {
                 self.shared_snapshot_id
-                    .as_ref()
+                    .get()
                     .and_then(|ssid| ssid.get_value(None))
             })
             .and_then(|snapshot_id| self.table.metadata().snapshot_by_id(snapshot_id))
@@ -65,13 +65,14 @@ impl crate::IcebergTableProvider {
         }
     }
 
-    /// Sets moderator for snapshot id and returns it. If a moderator has already been set, it is reset.
-    /// When set, moderator is updated with new snapshot id value after each full (run to completion) insert_into() execution.
-    pub fn set_snapshot_id_moderator(&mut self) -> SnapshotIdModerator {
-        let shared = SharedSnapshotId::new(self.snapshot_id);
-        let moderator = SnapshotIdModerator::new(shared.clone());
-        self.shared_snapshot_id = Some(shared);
-        moderator
+    /// Returns moderator for snapshot id (creating it if it doesn't exist yet).
+    /// Moderator is updated with new snapshot id value after each full (run to completion) insert_into() execution.
+    pub fn snapshot_id_moderator(&self) -> SnapshotIdModerator {
+        SnapshotIdModerator::new(
+            self.shared_snapshot_id
+                .get_or_init(|| SharedSnapshotId::new(self.snapshot_id))
+                .clone(),
+        )
     }
 }
 
@@ -101,7 +102,7 @@ pub(crate) struct SharedSnapshotId(sync::Arc<atomic::AtomicI64>);
 impl SharedSnapshotId {
     const UNSET_ID: i64 = i64::MIN; // SnapshotProducer::generate_unique_snapshot_id() doesn't generate negative ids.
 
-    /// Creates new [`SnapshotIdWatcher`] instance.
+    /// Creates new [`SharedSnapshotId`] instance.
     pub(crate) fn new(initial: Option<i64>) -> Self {
         Self(sync::Arc::new(atomic::AtomicI64::new(
             initial.unwrap_or(Self::UNSET_ID),
@@ -111,14 +112,14 @@ impl SharedSnapshotId {
     /// Returns contained snapshot id value, if it differs from the previous.
     /// When previous is `None`, returns snapshot id value if it was set.
     pub(crate) fn get_value(&self, previous_id_value: Option<i64>) -> Option<i64> {
-        let received = self.0.load(atomic::Ordering::Relaxed);
+        let received = self.0.load(atomic::Ordering::Acquire);
         let previous = previous_id_value.unwrap_or(Self::UNSET_ID);
         (previous != received).then_some(received)
     }
 
     /// Sets new value for snapshot id; returns `true` if it differs from the old one, `false` otherwise.
     pub(crate) fn set_value(&self, new_id_value: i64) -> bool {
-        let old_value = self.0.swap(new_id_value, atomic::Ordering::Relaxed);
+        let old_value = self.0.swap(new_id_value, atomic::Ordering::Release);
         old_value != new_id_value
     }
 }
@@ -133,7 +134,7 @@ pub struct SnapshotIdModerator {
 impl SnapshotIdModerator {
     /// Creates new instance of [`SnapshotIdModerator`].
     pub(crate) fn new(shared: SharedSnapshotId) -> Self {
-        let previous = shared.0.load(atomic::Ordering::Relaxed);
+        let previous = shared.0.load(atomic::Ordering::Acquire);
         Self { shared, previous }
     }
 

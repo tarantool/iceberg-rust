@@ -20,7 +20,7 @@ pub mod table_provider_factory;
 
 use std::any::Any;
 use std::num::NonZeroUsize;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use async_trait::async_trait;
 use datafusion::arrow::datatypes::SchemaRef as ArrowSchemaRef;
@@ -57,7 +57,7 @@ pub struct IcebergTableProvider {
     /// The catalog that the table belongs to.
     pub(crate) catalog: Option<Arc<dyn Catalog>>,
     /// Receiver of the snapshot id value; when set is updated after every full (run to completion) insert_into() execution.
-    pub(crate) shared_snapshot_id: Option<extensions::SharedSnapshotId>,
+    pub(crate) shared_snapshot_id: OnceLock<extensions::SharedSnapshotId>,
 }
 
 impl IcebergTableProvider {
@@ -67,7 +67,7 @@ impl IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: None,
-            shared_snapshot_id: None,
+            shared_snapshot_id: OnceLock::new(),
         }
     }
 
@@ -89,7 +89,7 @@ impl IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: Some(client),
-            shared_snapshot_id: None,
+            shared_snapshot_id: OnceLock::new(),
         })
     }
 
@@ -102,7 +102,7 @@ impl IcebergTableProvider {
             snapshot_id: None,
             schema,
             catalog: None,
-            shared_snapshot_id: None,
+            shared_snapshot_id: OnceLock::new(),
         })
     }
 
@@ -128,7 +128,7 @@ impl IcebergTableProvider {
             snapshot_id: Some(snapshot_id),
             schema,
             catalog: None,
-            shared_snapshot_id: None,
+            shared_snapshot_id: OnceLock::new(),
         })
     }
 
@@ -229,8 +229,8 @@ impl TableProvider for IcebergTableProvider {
             self.schema.clone(),
         );
 
-        if let Some(ref snapshot_id_watcher) = self.shared_snapshot_id {
-            commit = commit.with_shared_snapshot_id(snapshot_id_watcher.clone());
+        if let Some(shared_snapshot_id) = self.shared_snapshot_id.get() {
+            commit = commit.with_shared_snapshot_id(shared_snapshot_id.clone());
         }
 
         Ok(Arc::new(commit))
