@@ -36,7 +36,7 @@ use iceberg::table::Table;
 use iceberg::transaction::{ApplyTransactionAction, Transaction};
 
 use crate::physical_plan::DATA_FILES_COL_NAME;
-use crate::to_datafusion_error;
+use crate::{extensions, to_datafusion_error};
 
 /// IcebergCommitExec is responsible for collecting the files written and use
 /// [`Transaction::fast_append`] to commit the data files written.
@@ -48,6 +48,7 @@ pub(crate) struct IcebergCommitExec {
     schema: ArrowSchemaRef,
     count_schema: ArrowSchemaRef,
     plan_properties: PlanProperties,
+    pub(crate) shared_snapshot_id: Option<extensions::SharedSnapshotId>,
 }
 
 impl IcebergCommitExec {
@@ -68,6 +69,7 @@ impl IcebergCommitExec {
             schema,
             count_schema,
             plan_properties,
+            shared_snapshot_id: None,
         }
     }
 
@@ -184,6 +186,8 @@ impl ExecutionPlan for IcebergCommitExec {
 
         let catalog = Arc::clone(&self.catalog);
 
+        let shared_snapshot_id = self.shared_snapshot_id.clone();
+
         // Process the input streams from all partitions and commit the data files
         let stream = futures::stream::once(async move {
             let mut data_files: Vec<DataFile> = Vec::new();
@@ -243,14 +247,18 @@ impl ExecutionPlan for IcebergCommitExec {
             let action = tx.fast_append().add_data_files(data_files);
 
             // Apply the action and commit the transaction
-            let _updated_table = action
+            let updated_table = action
                 .apply(tx)
                 .map_err(to_datafusion_error)?
                 .commit(catalog.as_ref())
                 .await
                 .map_err(to_datafusion_error)?;
 
-            Self::make_count_batch(total_record_count)
+            let result_batch = Self::make_count_batch(total_record_count)?;
+
+            Self::update_shared_snapshot_id(shared_snapshot_id, &updated_table);
+
+            Ok(result_batch)
         })
         .boxed();
 
