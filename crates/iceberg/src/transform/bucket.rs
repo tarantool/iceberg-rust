@@ -162,6 +162,11 @@ impl TransformFunction for Bucket {
                 .downcast_ref::<arrow_array::Time64MicrosecondArray>()
                 .unwrap()
                 .unary(|v| self.bucket_time(v)),
+            DataType::Timestamp(TimeUnit::Millisecond, _) => input
+                .as_any()
+                .downcast_ref::<arrow_array::TimestampMillisecondArray>()
+                .unwrap()
+                .unary(|v| self.bucket_timestamp(v * 1000)),
             DataType::Timestamp(TimeUnit::Microsecond, _) => input
                 .as_any()
                 .downcast_ref::<arrow_array::TimestampMicrosecondArray>()
@@ -237,6 +242,12 @@ impl TransformFunction for Bucket {
             (PrimitiveType::Decimal { .. }, PrimitiveLiteral::Int128(v)) => self.bucket_decimal(*v),
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => self.bucket_date(*v),
             (PrimitiveType::Time, PrimitiveLiteral::Long(v)) => self.bucket_time(*v),
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                self.bucket_timestamp(*v * 1000)
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                self.bucket_timestamp(*v * 1000)
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => self.bucket_timestamp(*v),
             (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(v)) => self.bucket_timestamp(*v),
             (PrimitiveType::TimestampNs, PrimitiveLiteral::Long(v)) => {

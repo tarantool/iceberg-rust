@@ -229,6 +229,10 @@ pub enum PrimitiveType {
     Date,
     /// Time of day in microsecond precision, without date or timezone.
     Time,
+    /// Timestamp in millisecond precision, without timezone
+    TimestampMs,
+    /// Timestamp in millisecond precision, with timezone
+    TimestamptzMs,
     /// Timestamp in microsecond precision, without timezone
     Timestamp,
     /// Timestamp in microsecond precision, with timezone
@@ -262,6 +266,8 @@ impl PrimitiveType {
                 | (PrimitiveType::Decimal { .. }, PrimitiveLiteral::Int128(_))
                 | (PrimitiveType::Date, PrimitiveLiteral::Int(_))
                 | (PrimitiveType::Time, PrimitiveLiteral::Long(_))
+                | (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(_))
+                | (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(_))
                 | (PrimitiveType::Timestamp, PrimitiveLiteral::Long(_))
                 | (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(_))
                 | (PrimitiveType::TimestampNs, PrimitiveLiteral::Long(_))
@@ -374,6 +380,8 @@ impl fmt::Display for PrimitiveType {
             }
             PrimitiveType::Date => write!(f, "date"),
             PrimitiveType::Time => write!(f, "time"),
+            PrimitiveType::TimestampMs => write!(f, "timestamp_ms"),
+            PrimitiveType::TimestamptzMs => write!(f, "timestamptz_ms"),
             PrimitiveType::Timestamp => write!(f, "timestamp"),
             PrimitiveType::Timestamptz => write!(f, "timestamptz"),
             PrimitiveType::TimestampNs => write!(f, "timestamp_ns"),
@@ -1201,6 +1209,8 @@ mod tests {
             ),
             (PrimitiveType::Date, PrimitiveLiteral::Int(1)),
             (PrimitiveType::Time, PrimitiveLiteral::Long(1)),
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(1)),
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(1)),
             (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(1)),
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(1)),
             (PrimitiveType::TimestamptzNs, PrimitiveLiteral::Long(1)),

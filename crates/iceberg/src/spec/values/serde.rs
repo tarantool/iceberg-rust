@@ -414,6 +414,12 @@ pub(crate) mod _serde {
                     ))),
                     Type::Primitive(PrimitiveType::Long) => Ok(Some(Literal::long(v))),
                     Type::Primitive(PrimitiveType::Time) => Ok(Some(Literal::time(v))),
+                    Type::Primitive(PrimitiveType::TimestampMs) => {
+                        Ok(Some(Literal::timestamp_milli(v)))
+                    }
+                    Type::Primitive(PrimitiveType::TimestamptzMs) => {
+                        Ok(Some(Literal::timestamptz_milli(v)))
+                    }
                     Type::Primitive(PrimitiveType::Timestamp) => Ok(Some(Literal::timestamp(v))),
                     Type::Primitive(PrimitiveType::Timestamptz) => {
                         Ok(Some(Literal::timestamptz(v)))

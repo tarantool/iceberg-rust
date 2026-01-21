@@ -311,6 +311,12 @@ impl Display for Datum {
             (PrimitiveType::Time, PrimitiveLiteral::Long(val)) => {
                 write!(f, "{}", time::microseconds_to_time(*val))
             }
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(val)) => {
+                write!(f, "{}", timestamp::milliseconds_to_datetime(*val))
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(val)) => {
+                write!(f, "{}", timestamptz::milliseconds_to_datetimetz(*val))
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(val)) => {
                 write!(f, "{}", timestamp::microseconds_to_datetime(*val))
             }
@@ -406,6 +412,12 @@ impl Datum {
             }
             PrimitiveType::Date => PrimitiveLiteral::Int(i32::from_le_bytes(bytes.try_into()?)),
             PrimitiveType::Time => PrimitiveLiteral::Long(i64::from_le_bytes(bytes.try_into()?)),
+            PrimitiveType::TimestampMs => {
+                PrimitiveLiteral::Long(i64::from_le_bytes(bytes.try_into()?))
+            }
+            PrimitiveType::TimestamptzMs => {
+                PrimitiveLiteral::Long(i64::from_le_bytes(bytes.try_into()?))
+            }
             PrimitiveType::Timestamp => {
                 PrimitiveLiteral::Long(i64::from_le_bytes(bytes.try_into()?))
             }
@@ -778,6 +790,23 @@ impl Datum {
         Ok(Self::time_from_naive_time(t))
     }
 
+    /// Creates a timestamp from unix epoch in milliseconds.
+    ///
+    /// Example:
+    ///
+    /// ```rust
+    /// use iceberg::spec::Datum;
+    /// let t = Datum::timestamp_millis(456);
+    ///
+    /// assert_eq!(&format!("{t}"), "1970-01-01 00:00:00.456");
+    /// ```
+    pub fn timestamp_millis(value: i64) -> Self {
+        Self {
+            r#type: PrimitiveType::TimestampMs,
+            literal: PrimitiveLiteral::Long(value),
+        }
+    }
+
     /// Creates a timestamp from unix epoch in microseconds.
     ///
     /// Example:
@@ -851,6 +880,23 @@ impl Datum {
         })?;
 
         Ok(Self::timestamp_from_datetime(dt))
+    }
+
+    /// Creates a timestamp with timezone from unix epoch in milliseconds.
+    ///
+    /// Example:
+    ///
+    /// ```rust
+    /// use iceberg::spec::Datum;
+    /// let t = Datum::timestamptz_millis(456);
+    ///
+    /// assert_eq!(&format!("{t}"), "1970-01-01 00:00:00.456 UTC");
+    /// ```
+    pub fn timestamptz_millis(value: i64) -> Self {
+        Self {
+            r#type: PrimitiveType::TimestamptzMs,
+            literal: PrimitiveLiteral::Long(value),
+        }
     }
 
     /// Creates a timestamp with timezone from unix epoch in microseconds.
@@ -1144,11 +1190,23 @@ impl Datum {
                     (PrimitiveLiteral::Long(val), _, PrimitiveType::Int) => {
                         Ok(Datum::i64_to_i32(*val))
                     }
+                    (PrimitiveLiteral::Long(val), _, PrimitiveType::TimestampMs) => {
+                        Ok(Datum::timestamp_millis(*val))
+                    }
+                    (PrimitiveLiteral::Long(val), _, PrimitiveType::TimestamptzMs) => {
+                        Ok(Datum::timestamptz_millis(*val))
+                    }
                     (PrimitiveLiteral::Long(val), _, PrimitiveType::Timestamp) => {
                         Ok(Datum::timestamp_micros(*val))
                     }
                     (PrimitiveLiteral::Long(val), _, PrimitiveType::Timestamptz) => {
                         Ok(Datum::timestamptz_micros(*val))
+                    }
+                    (PrimitiveLiteral::Long(val), _, PrimitiveType::TimestampNs) => {
+                        Ok(Datum::timestamp_nanos(*val))
+                    }
+                    (PrimitiveLiteral::Long(val), _, PrimitiveType::TimestamptzNs) => {
+                        Ok(Datum::timestamptz_nanos(*val))
                     }
                     // Let's wait with nano's until this clears up: https://github.com/apache/iceberg/pull/11775
                     (PrimitiveLiteral::Int128(val), _, PrimitiveType::Long) => {

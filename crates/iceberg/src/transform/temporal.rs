@@ -21,7 +21,8 @@ use arrow_arith::arity::binary;
 use arrow_arith::temporal::{DatePart, date_part};
 use arrow_array::types::Date32Type;
 use arrow_array::{
-    Array, ArrayRef, Date32Array, Int32Array, TimestampMicrosecondArray, TimestampNanosecondArray,
+    Array, ArrayRef, Date32Array, Int32Array, TimestampMicrosecondArray, TimestampMillisecondArray,
+    TimestampNanosecondArray,
 };
 use arrow_schema::{DataType, TimeUnit};
 use chrono::{DateTime, Datelike, Duration};
@@ -30,12 +31,16 @@ use super::TransformFunction;
 use crate::spec::{Datum, PrimitiveLiteral, PrimitiveType};
 use crate::{Error, ErrorKind, Result};
 
+/// Milliseconds in one hour.
+const MILLISECONDS_PER_HOUR: i64 = 3_600_000;
 /// Microseconds in one hour.
 const MICROSECONDS_PER_HOUR: i64 = 3_600_000_000;
 /// Nanoseconds in one hour.
 const NANOSECONDS_PER_HOUR: i64 = 3_600_000_000_000;
 /// Year of unix epoch.
 const UNIX_EPOCH_YEAR: i32 = 1970;
+/// One second in micros.
+const MILLIS_PER_SECOND: i64 = 1_000;
 /// One second in micros.
 const MICROS_PER_SECOND: i64 = 1_000_000;
 /// One second in nanos.
@@ -47,12 +52,25 @@ pub struct Year;
 
 impl Year {
     #[inline]
+    fn timestamp_to_year_millis(timestamp: i64) -> Result<i32> {
+        Ok(DateTime::from_timestamp_millis(timestamp)
+            .ok_or_else(|| {
+                Error::new(
+                    ErrorKind::DataInvalid,
+                    "Fail to convert timestamp to date in year transform (milli)",
+                )
+            })?
+            .year()
+            - UNIX_EPOCH_YEAR)
+    }
+
+    #[inline]
     fn timestamp_to_year_micros(timestamp: i64) -> Result<i32> {
         Ok(DateTime::from_timestamp_micros(timestamp)
             .ok_or_else(|| {
                 Error::new(
                     ErrorKind::DataInvalid,
-                    "Fail to convert timestamp to date in year transform",
+                    "Fail to convert timestamp to date in year transform (micro)",
                 )
             })?
             .year()
@@ -82,6 +100,12 @@ impl TransformFunction for Year {
         let val = match (input.data_type(), input.literal()) {
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => {
                 Date32Type::to_naive_date(*v).year() - UNIX_EPOCH_YEAR
+            }
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                Self::timestamp_to_year_millis(*v)?
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                Self::timestamp_to_year_millis(*v)?
             }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => {
                 Self::timestamp_to_year_micros(*v)?
@@ -115,6 +139,23 @@ pub struct Month;
 
 impl Month {
     #[inline]
+    fn timestamp_to_month_millis(timestamp: i64) -> Result<i32> {
+        // date: aaaa-aa-aa
+        // unix epoch date: 1970-01-01
+        // if date > unix epoch date, delta month = (aa - 1) + 12 * (aaaa-1970)
+        // if date < unix epoch date, delta month = (12 - (aa - 1)) + 12 * (1970-aaaa-1)
+        let date = DateTime::from_timestamp_millis(timestamp).ok_or_else(|| {
+            Error::new(
+                ErrorKind::DataInvalid,
+                "Fail to convert timestamp to date in month transform (milli)",
+            )
+        })?;
+        let unix_epoch_date = DateTime::from_timestamp_millis(0)
+            .expect("0 timestamp from unix epoch should be valid");
+        Ok(Self::timestamp_to_month_inner(date, unix_epoch_date))
+    }
+
+    #[inline]
     fn timestamp_to_month_micros(timestamp: i64) -> Result<i32> {
         // date: aaaa-aa-aa
         // unix epoch date: 1970-01-01
@@ -123,17 +164,12 @@ impl Month {
         let date = DateTime::from_timestamp_micros(timestamp).ok_or_else(|| {
             Error::new(
                 ErrorKind::DataInvalid,
-                "Fail to convert timestamp to date in month transform",
+                "Fail to convert timestamp to date in month transform (micro)",
             )
         })?;
         let unix_epoch_date = DateTime::from_timestamp_micros(0)
             .expect("0 timestamp from unix epoch should be valid");
-        if date > unix_epoch_date {
-            Ok((date.month0() as i32) + 12 * (date.year() - UNIX_EPOCH_YEAR))
-        } else {
-            let delta = (12 - date.month0() as i32) + 12 * (UNIX_EPOCH_YEAR - date.year() - 1);
-            Ok(-delta)
-        }
+        Ok(Self::timestamp_to_month_inner(date, unix_epoch_date))
     }
 
     #[inline]
@@ -144,11 +180,18 @@ impl Month {
         // if date < unix epoch date, delta month = (12 - (aa - 1)) + 12 * (1970-aaaa-1)
         let date = DateTime::from_timestamp_nanos(timestamp);
         let unix_epoch_date = DateTime::from_timestamp_nanos(0);
+        Ok(Self::timestamp_to_month_inner(date, unix_epoch_date))
+    }
+
+    fn timestamp_to_month_inner(
+        date: DateTime<chrono::Utc>,
+        unix_epoch_date: DateTime<chrono::Utc>,
+    ) -> i32 {
         if date > unix_epoch_date {
-            Ok((date.month0() as i32) + 12 * (date.year() - UNIX_EPOCH_YEAR))
+            (date.month0() as i32) + 12 * (date.year() - UNIX_EPOCH_YEAR)
         } else {
             let delta = (12 - date.month0() as i32) + 12 * (UNIX_EPOCH_YEAR - date.year() - 1);
-            Ok(-delta)
+            -delta
         }
     }
 }
@@ -181,6 +224,12 @@ impl TransformFunction for Month {
                 (Date32Type::to_naive_date(*v).year() - UNIX_EPOCH_YEAR) * 12
                     + Date32Type::to_naive_date(*v).month0() as i32
             }
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                Self::timestamp_to_month_millis(*v)?
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                Self::timestamp_to_month_millis(*v)?
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => {
                 Self::timestamp_to_month_micros(*v)?
             }
@@ -207,58 +256,86 @@ impl TransformFunction for Month {
     }
 }
 
+trait Period {
+    const NAME: &'static str;
+    const AMOUNT_PER_SECOND: i64;
+}
+
+const fn nanos_per_period<P: Period>() -> i64 {
+    NANOS_PER_SECOND / P::AMOUNT_PER_SECOND
+}
+
+struct NanoSec;
+
+impl Period for NanoSec {
+    const NAME: &'static str = "nano";
+    const AMOUNT_PER_SECOND: i64 = NANOS_PER_SECOND;
+}
+
+struct MicroSec;
+
+impl Period for MicroSec {
+    const NAME: &'static str = "micro";
+    const AMOUNT_PER_SECOND: i64 = MICROS_PER_SECOND;
+}
+
+struct MilliSec;
+
+impl Period for MilliSec {
+    const NAME: &'static str = "milli";
+    const AMOUNT_PER_SECOND: i64 = MILLIS_PER_SECOND;
+}
+
 /// Extract a date or timestamp day, as days from 1970-01-01
 #[derive(Debug)]
 pub struct Day;
 
 impl Day {
     #[inline]
+    fn day_timestamp_milli(v: i64) -> Result<i32> {
+        Self::day_timestamp::<MilliSec>(v)
+    }
+
+    #[inline]
     fn day_timestamp_micro(v: i64) -> Result<i32> {
-        let secs = v / MICROS_PER_SECOND;
-
-        let (nanos, offset) = if v >= 0 {
-            let nanos = (v.rem_euclid(MICROS_PER_SECOND) * 1_000) as u32;
-            let offset = 0i64;
-            (nanos, offset)
-        } else {
-            let v = v + 1;
-            let nanos = (v.rem_euclid(MICROS_PER_SECOND) * 1_000) as u32;
-            let offset = 1i64;
-            (nanos, offset)
-        };
-
-        let delta = Duration::new(secs, nanos).ok_or_else(|| {
-            Error::new(
-                ErrorKind::DataInvalid,
-                format!("Failed to create 'TimeDelta' from seconds {secs} and nanos {nanos}"),
-            )
-        })?;
-
-        let days = (delta.num_days() - offset) as i32;
-
-        Ok(days)
+        Self::day_timestamp::<MicroSec>(v)
     }
 
     fn day_timestamp_nano(v: i64) -> Result<i32> {
-        let secs = v / NANOS_PER_SECOND;
+        Self::day_timestamp::<NanoSec>(v)
+    }
+
+    fn day_timestamp<P: Period>(v: i64) -> Result<i32> {
+        Self::day_timestamp_inner::<P>(v).map_err(|(secs, nanos)| {
+            Error::new(
+                ErrorKind::DataInvalid,
+                format!(
+                    "Failed to create 'TimeDelta' from seconds {} and nanos {} ({})",
+                    secs,
+                    nanos,
+                    P::NAME
+                ),
+            )
+        })
+    }
+
+    const fn day_timestamp_inner<P: Period>(v: i64) -> std::result::Result<i32, (i64, u32)> {
+        let secs = v / P::AMOUNT_PER_SECOND;
 
         let (nanos, offset) = if v >= 0 {
-            let nanos = (v.rem_euclid(NANOS_PER_SECOND)) as u32;
+            let nanos = (v.rem_euclid(P::AMOUNT_PER_SECOND) * nanos_per_period::<P>()) as u32;
             let offset = 0i64;
             (nanos, offset)
         } else {
             let v = v + 1;
-            let nanos = (v.rem_euclid(NANOS_PER_SECOND)) as u32;
+            let nanos = (v.rem_euclid(P::AMOUNT_PER_SECOND) * nanos_per_period::<P>()) as u32;
             let offset = 1i64;
             (nanos, offset)
         };
 
-        let delta = Duration::new(secs, nanos).ok_or_else(|| {
-            Error::new(
-                ErrorKind::DataInvalid,
-                format!("Failed to create 'TimeDelta' from seconds {secs} and nanos {nanos}"),
-            )
-        })?;
+        let Some(delta) = Duration::new(secs, nanos) else {
+            return Err((secs, nanos));
+        };
 
         let days = (delta.num_days() - offset) as i32;
 
@@ -269,6 +346,11 @@ impl Day {
 impl TransformFunction for Day {
     fn transform(&self, input: ArrayRef) -> Result<ArrayRef> {
         let res: Date32Array = match input.data_type() {
+            DataType::Timestamp(TimeUnit::Millisecond, _) => input
+                .as_any()
+                .downcast_ref::<TimestampMillisecondArray>()
+                .unwrap()
+                .try_unary(|v| -> Result<i32> { Self::day_timestamp_milli(v) })?,
             DataType::Timestamp(TimeUnit::Microsecond, _) => input
                 .as_any()
                 .downcast_ref::<TimestampMicrosecondArray>()
@@ -300,6 +382,12 @@ impl TransformFunction for Day {
     fn transform_literal(&self, input: &crate::spec::Datum) -> Result<Option<crate::spec::Datum>> {
         let val = match (input.data_type(), input.literal()) {
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => *v,
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                Self::day_timestamp_milli(*v)?
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                Self::day_timestamp_milli(*v)?
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => Self::day_timestamp_micro(*v)?,
             (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(v)) => {
                 Self::day_timestamp_micro(*v)?
@@ -329,6 +417,11 @@ impl TransformFunction for Day {
 pub struct Hour;
 
 impl Hour {
+    #[inline]
+    fn hour_timestamp_milli(v: i64) -> i32 {
+        v.div_euclid(MILLISECONDS_PER_HOUR) as i32
+    }
+
     #[inline]
     fn hour_timestamp_micro(v: i64) -> i32 {
         v.div_euclid(MICROSECONDS_PER_HOUR) as i32
@@ -363,6 +456,12 @@ impl TransformFunction for Hour {
 
     fn transform_literal(&self, input: &crate::spec::Datum) -> Result<Option<crate::spec::Datum>> {
         let val = match (input.data_type(), input.literal()) {
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                Self::hour_timestamp_milli(*v)
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                Self::hour_timestamp_milli(*v)
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => Self::hour_timestamp_micro(*v),
             (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(v)) => {
                 Self::hour_timestamp_micro(*v)

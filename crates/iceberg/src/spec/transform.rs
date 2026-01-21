@@ -178,6 +178,8 @@ impl Transform {
                         | PrimitiveType::Decimal { .. }
                         | PrimitiveType::Date
                         | PrimitiveType::Time
+                        | PrimitiveType::TimestampMs
+                        | PrimitiveType::TimestamptzMs
                         | PrimitiveType::Timestamp
                         | PrimitiveType::Timestamptz
                         | PrimitiveType::TimestampNs
@@ -221,7 +223,9 @@ impl Transform {
             Transform::Year | Transform::Month => {
                 if let Type::Primitive(p) = input_type {
                     match p {
-                        PrimitiveType::Timestamp
+                        PrimitiveType::TimestampMs
+                        | PrimitiveType::TimestamptzMs
+                        | PrimitiveType::Timestamp
                         | PrimitiveType::Timestamptz
                         | PrimitiveType::TimestampNs
                         | PrimitiveType::TimestamptzNs
@@ -241,7 +245,9 @@ impl Transform {
             Transform::Day => {
                 if let Type::Primitive(p) = input_type {
                     match p {
-                        PrimitiveType::Timestamp
+                        PrimitiveType::TimestampMs
+                        | PrimitiveType::TimestamptzMs
+                        | PrimitiveType::Timestamp
                         | PrimitiveType::Timestamptz
                         | PrimitiveType::TimestampNs
                         | PrimitiveType::TimestamptzNs
@@ -261,7 +267,9 @@ impl Transform {
             Transform::Hour => {
                 if let Type::Primitive(p) = input_type {
                     match p {
-                        PrimitiveType::Timestamp
+                        PrimitiveType::TimestampMs
+                        | PrimitiveType::TimestamptzMs
+                        | PrimitiveType::Timestamp
                         | PrimitiveType::Timestamptz
                         | PrimitiveType::TimestampNs
                         | PrimitiveType::TimestamptzNs => Ok(Type::Primitive(PrimitiveType::Int)),
@@ -810,11 +818,17 @@ impl Transform {
             (PrimitiveType::Long, PrimitiveLiteral::Long(v)) => Ok(Datum::long(v + 1)),
             (PrimitiveType::Decimal { .. }, PrimitiveLiteral::Int128(v)) => Datum::decimal(v + 1),
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => Ok(Datum::date(v + 1)),
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                Ok(Datum::timestamp_millis(v + 1))
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => {
                 Ok(Datum::timestamp_micros(v + 1))
             }
             (PrimitiveType::TimestampNs, PrimitiveLiteral::Long(v)) => {
                 Ok(Datum::timestamp_nanos(v + 1))
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                Ok(Datum::timestamptz_millis(v + 1))
             }
             (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(v)) => {
                 Ok(Datum::timestamptz_micros(v + 1))
@@ -846,11 +860,17 @@ impl Transform {
             (PrimitiveType::Long, PrimitiveLiteral::Long(v)) => Ok(Datum::long(v - 1)),
             (PrimitiveType::Decimal { .. }, PrimitiveLiteral::Int128(v)) => Datum::decimal(v - 1),
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => Ok(Datum::date(v - 1)),
+            (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(v)) => {
+                Ok(Datum::timestamp_millis(v - 1))
+            }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => {
                 Ok(Datum::timestamp_micros(v - 1))
             }
             (PrimitiveType::TimestampNs, PrimitiveLiteral::Long(v)) => {
                 Ok(Datum::timestamp_nanos(v - 1))
+            }
+            (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(v)) => {
+                Ok(Datum::timestamptz_millis(v - 1))
             }
             (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(v)) => {
                 Ok(Datum::timestamptz_micros(v - 1))
@@ -887,6 +907,8 @@ impl Transform {
                 | &PrimitiveType::Long
                 | &PrimitiveType::Decimal { .. }
                 | &PrimitiveType::Date
+                | &PrimitiveType::TimestampMs
+                | &PrimitiveType::TimestamptzMs
                 | &PrimitiveType::Timestamp
                 | &PrimitiveType::Timestamptz
                 | &PrimitiveType::TimestampNs

@@ -515,12 +515,12 @@ impl FileWriter for ParquetWriter {
         let writer = if let Some(writer) = &mut self.inner_writer {
             writer
         } else {
-            let arrow_schema: ArrowSchemaRef = Arc::new(self.schema.as_ref().try_into()?);
             let inner_writer = self.output_file.writer().await?;
             let async_writer = AsyncFileWriter::new(inner_writer);
+            let arrow_schema: ArrowSchemaRef = Arc::new(self.schema.as_ref().try_into()?);
             let writer = AsyncArrowWriter::try_new(
                 async_writer,
-                arrow_schema.clone(),
+                arrow_schema,
                 Some(self.writer_properties.clone()),
             )
             .map_err(|err| {

@@ -19,7 +19,8 @@ use arrow_array::{
     Array, ArrayRef, BinaryArray, BooleanArray, Date32Array, Decimal128Array, FixedSizeBinaryArray,
     FixedSizeListArray, Float32Array, Float64Array, Int32Array, Int64Array, LargeBinaryArray,
     LargeListArray, LargeStringArray, ListArray, MapArray, StringArray, StructArray,
-    Time64MicrosecondArray, TimestampMicrosecondArray, TimestampNanosecondArray,
+    Time64MicrosecondArray, TimestampMicrosecondArray, TimestampMillisecondArray,
+    TimestampNanosecondArray,
 };
 use arrow_schema::{DataType, FieldRef};
 use uuid::Uuid;
@@ -287,6 +288,36 @@ impl SchemaWithPartnerVisitor<ArrayRef> for ArrowArrayToIcebergStructConverter {
                         Error::new(ErrorKind::DataInvalid, "The partner is not a time64 array")
                     })?;
                 Ok(array.iter().map(|v| v.map(Literal::time)).collect())
+            }
+            PrimitiveType::TimestampMs => {
+                let array = partner
+                    .as_any()
+                    .downcast_ref::<TimestampMillisecondArray>()
+                    .ok_or_else(|| {
+                        Error::new(
+                            ErrorKind::DataInvalid,
+                            "The partner is not a timestamp_ms array",
+                        )
+                    })?;
+                Ok(array
+                    .iter()
+                    .map(|v| v.map(Literal::timestamp_milli))
+                    .collect())
+            }
+            PrimitiveType::TimestamptzMs => {
+                let array = partner
+                    .as_any()
+                    .downcast_ref::<TimestampMillisecondArray>()
+                    .ok_or_else(|| {
+                        Error::new(
+                            ErrorKind::DataInvalid,
+                            "The partner is not a timestamptz_ms array",
+                        )
+                    })?;
+                Ok(array
+                    .iter()
+                    .map(|v| v.map(Literal::timestamptz_milli))
+                    .collect())
             }
             PrimitiveType::Timestamp => {
                 let array = partner
@@ -646,6 +677,8 @@ mod test {
             .unwrap();
         let date_array = Date32Array::from(vec![Some(18628), Some(18629), None]);
         let time_array = Time64MicrosecondArray::from(vec![Some(123456789), Some(987654321), None]);
+        let timestamp_milli_array =
+            TimestampMillisecondArray::from(vec![Some(1622548800000), Some(1622635200000), None]);
         let timestamp_micro_array = TimestampMicrosecondArray::from(vec![
             Some(1622548800000000),
             Some(1622635200000000),
@@ -730,13 +763,27 @@ mod test {
             (
                 Arc::new(
                     Field::new(
+                        "timestamp_milli_field",
+                        DataType::Timestamp(TimeUnit::Millisecond, None),
+                        true,
+                    )
+                    .with_metadata(HashMap::from([(
+                        PARQUET_FIELD_ID_META_KEY.to_string(),
+                        "9".to_string(),
+                    )])),
+                ),
+                Arc::new(timestamp_milli_array) as ArrayRef,
+            ),
+            (
+                Arc::new(
+                    Field::new(
                         "timestamp_micro_field",
                         DataType::Timestamp(TimeUnit::Microsecond, None),
                         true,
                     )
                     .with_metadata(HashMap::from([(
                         PARQUET_FIELD_ID_META_KEY.to_string(),
-                        "9".to_string(),
+                        "10".to_string(),
                     )])),
                 ),
                 Arc::new(timestamp_micro_array) as ArrayRef,
@@ -750,7 +797,7 @@ mod test {
                     )
                     .with_metadata(HashMap::from([(
                         PARQUET_FIELD_ID_META_KEY.to_string(),
-                        "10".to_string(),
+                        "11".to_string(),
                     )])),
                 ),
                 Arc::new(timestamp_nano_array) as ArrayRef,
@@ -758,7 +805,7 @@ mod test {
             (
                 Arc::new(
                     Field::new("string_field", DataType::Utf8, true).with_metadata(HashMap::from(
-                        [(PARQUET_FIELD_ID_META_KEY.to_string(), "11".to_string())],
+                        [(PARQUET_FIELD_ID_META_KEY.to_string(), "12".to_string())],
                     )),
                 ),
                 Arc::new(string_array) as ArrayRef,
@@ -766,7 +813,7 @@ mod test {
             (
                 Arc::new(
                     Field::new("binary_field", DataType::Binary, true).with_metadata(
-                        HashMap::from([(PARQUET_FIELD_ID_META_KEY.to_string(), "12".to_string())]),
+                        HashMap::from([(PARQUET_FIELD_ID_META_KEY.to_string(), "13".to_string())]),
                     ),
                 ),
                 Arc::new(binary_array) as ArrayRef,
@@ -819,21 +866,26 @@ mod test {
             )),
             Arc::new(NestedField::optional(
                 9,
+                "timestamp_milli_field",
+                Type::Primitive(PrimitiveType::TimestampMs),
+            )),
+            Arc::new(NestedField::optional(
+                10,
                 "timestamp_micro_field",
                 Type::Primitive(PrimitiveType::Timestamp),
             )),
             Arc::new(NestedField::optional(
-                10,
-                "timestamp_nao_field",
+                11,
+                "timestamp_nano_field",
                 Type::Primitive(PrimitiveType::TimestampNs),
             )),
             Arc::new(NestedField::optional(
-                11,
+                12,
                 "string_field",
                 Type::Primitive(PrimitiveType::String),
             )),
             Arc::new(NestedField::optional(
-                12,
+                13,
                 "binary_field",
                 Type::Primitive(PrimitiveType::Binary),
             )),
@@ -851,6 +903,7 @@ mod test {
                 Some(Literal::decimal(1000)),
                 Some(Literal::date(18628)),
                 Some(Literal::time(123456789)),
+                Some(Literal::timestamp_milli(1622548800000)),
                 Some(Literal::timestamp(1622548800000000)),
                 Some(Literal::timestamp_nano(1622548800000000000)),
                 Some(Literal::string("a".to_string())),
@@ -865,13 +918,14 @@ mod test {
                 Some(Literal::decimal(2000)),
                 Some(Literal::date(18629)),
                 Some(Literal::time(987654321)),
+                Some(Literal::timestamp_milli(1622635200000)),
                 Some(Literal::timestamp(1622635200000000)),
                 Some(Literal::timestamp_nano(1622635200000000000)),
                 Some(Literal::string("b".to_string())),
                 Some(Literal::binary(b"def".to_vec())),
             ]))),
             Some(Literal::Struct(Struct::from_iter(vec![
-                None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None
             ]))),
         ]);
     }
