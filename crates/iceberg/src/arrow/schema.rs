@@ -50,7 +50,7 @@ pub const UTC_TIME_ZONE: &str = "+00:00";
 /// For order of methods called, please refer to [`visit_schema`].
 pub trait ArrowSchemaVisitor {
     /// Return type of this visitor on arrow field.
-    type T: std::fmt::Debug;
+    type T;
 
     /// Return type of this visitor on arrow schema.
     type U;
