@@ -301,6 +301,7 @@ impl Day {
         Self::day_timestamp::<MicroSec>(v)
     }
 
+    #[inline]
     fn day_timestamp_nano(v: i64) -> Result<i32> {
         Self::day_timestamp::<NanoSec>(v)
     }
