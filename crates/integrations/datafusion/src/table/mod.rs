@@ -57,6 +57,55 @@ use crate::physical_plan::scan::IcebergTableScan;
 use crate::physical_plan::sort::sort_by_partition;
 use crate::physical_plan::write::IcebergWriteExec;
 
+/// Helps to build [`IcebergTableProvider`].
+pub struct IcebergTableProviderBuilder {
+    catalog: Arc<dyn Catalog>,
+    table_ident: TableIdent,
+    schema: Option<ArrowSchemaRef>,
+}
+
+impl IcebergTableProviderBuilder {
+    /// Make a new [`IcebergTableProviderBuilder`].
+    pub fn new(catalog: Arc<dyn Catalog>, table_ident: TableIdent) -> Self {
+        Self {
+            catalog,
+            table_ident,
+            schema: None,
+        }
+    }
+
+    /// Set table schema, if it is known.
+    /// If schema it not set explicitly, then builder will automatically
+    /// load the schema when [`IcebergTableProviderBuilder::build`] is called.
+    pub fn with_schema(mut self, schema: Option<ArrowSchemaRef>) -> Self {
+        self.schema = schema;
+        self
+    }
+
+    /// Build table provider.
+    pub async fn build(self) -> Result<IcebergTableProvider> {
+        let Self {
+            catalog,
+            table_ident,
+            schema,
+        } = self;
+
+        let schema = if let Some(schema) = schema {
+            schema
+        } else {
+            // Load table once to get initial schema.
+            let table = catalog.load_table(&table_ident).await?;
+            Arc::new(schema_to_arrow_schema(table.metadata().current_schema())?)
+        };
+
+        Ok(IcebergTableProvider {
+            catalog,
+            table_ident,
+            schema,
+        })
+    }
+}
+
 /// Catalog-backed table provider with automatic metadata refresh.
 ///
 /// This provider loads fresh table metadata from the catalog on every scan and write
@@ -85,17 +134,9 @@ impl IcebergTableProvider {
         namespace: NamespaceIdent,
         name: impl Into<String>,
     ) -> Result<Self> {
-        let table_ident = TableIdent::new(namespace, name.into());
-
-        // Load table once to get initial schema
-        let table = catalog.load_table(&table_ident).await?;
-        let schema = Arc::new(schema_to_arrow_schema(table.metadata().current_schema())?);
-
-        Ok(IcebergTableProvider {
-            catalog,
-            table_ident,
-            schema,
-        })
+        IcebergTableProviderBuilder::new(catalog, TableIdent::new(namespace, name.into()))
+            .build()
+            .await
     }
 
     pub(crate) async fn metadata_table(
