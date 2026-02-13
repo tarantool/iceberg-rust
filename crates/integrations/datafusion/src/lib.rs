@@ -22,6 +22,7 @@ mod error;
 pub use error::*;
 
 mod extensions;
+pub use extensions::SnapshotIdModerator;
 
 pub mod physical_plan;
 mod schema;
