@@ -258,6 +258,16 @@ impl Literal {
         Ok(Self::time_from_naive_time(t))
     }
 
+    /// Creates a timestamp from unix epoch in milliseconds.
+    pub fn timestamp_milli(value: i64) -> Self {
+        Self::Primitive(PrimitiveLiteral::Long(value))
+    }
+
+    /// Creates a timestamp with timezone from unix epoch in milliseconds.
+    pub fn timestamptz_milli(value: i64) -> Self {
+        Self::Primitive(PrimitiveLiteral::Long(value))
+    }
+
     /// Creates a timestamp from unix epoch in microseconds.
     pub fn timestamp(value: i64) -> Self {
         Self::Primitive(PrimitiveLiteral::Long(value))
@@ -482,6 +492,18 @@ impl Literal {
                         time::time_to_microseconds(&NaiveTime::parse_from_str(&s, "%H:%M:%S%.f")?),
                     ))))
                 }
+                (PrimitiveType::TimestampMs, JsonValue::String(s)) => Ok(Some(Literal::Primitive(
+                    PrimitiveLiteral::Long(timestamp::datetime_to_milliseconds(
+                        &NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S%.f")?,
+                    )),
+                ))),
+                (PrimitiveType::TimestamptzMs, JsonValue::String(s)) => {
+                    Ok(Some(Literal::Primitive(PrimitiveLiteral::Long(
+                        timestamptz::datetimetz_to_milliseconds(&Utc.from_utc_datetime(
+                            &NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S%.f+00:00")?,
+                        )),
+                    ))))
+                }
                 (PrimitiveType::Timestamp, JsonValue::String(s)) => Ok(Some(Literal::Primitive(
                     PrimitiveLiteral::Long(timestamp::datetime_to_microseconds(
                         &NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S%.f")?,
@@ -632,6 +654,18 @@ impl Literal {
                 (PrimitiveType::Time, PrimitiveLiteral::Long(val)) => Ok(JsonValue::String(
                     time::microseconds_to_time(val).to_string(),
                 )),
+                (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(val)) => Ok(JsonValue::String(
+                    timestamp::milliseconds_to_datetime(val)
+                        .format("%Y-%m-%dT%H:%M:%S%.f")
+                        .to_string(),
+                )),
+                (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(val)) => {
+                    Ok(JsonValue::String(
+                        timestamptz::milliseconds_to_datetimetz(val)
+                            .format("%Y-%m-%dT%H:%M:%S%.f+00:00")
+                            .to_string(),
+                    ))
+                }
                 (PrimitiveType::Timestamp, PrimitiveLiteral::Long(val)) => Ok(JsonValue::String(
                     timestamp::microseconds_to_datetime(val)
                         .format("%Y-%m-%dT%H:%M:%S%.f")

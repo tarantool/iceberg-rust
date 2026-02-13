@@ -70,8 +70,16 @@ pub(crate) mod time {
 pub(crate) mod timestamp {
     use super::*;
 
+    pub(crate) fn datetime_to_milliseconds(time: &NaiveDateTime) -> i64 {
+        time.and_utc().timestamp_millis()
+    }
+
     pub(crate) fn datetime_to_microseconds(time: &NaiveDateTime) -> i64 {
         time.and_utc().timestamp_micros()
+    }
+
+    pub(crate) fn milliseconds_to_datetime(millis: i64) -> NaiveDateTime {
+        DateTime::from_timestamp_millis(millis).unwrap().naive_utc()
     }
 
     pub(crate) fn microseconds_to_datetime(micros: i64) -> NaiveDateTime {
@@ -87,8 +95,18 @@ pub(crate) mod timestamp {
 pub(crate) mod timestamptz {
     use super::*;
 
+    pub(crate) fn datetimetz_to_milliseconds(time: &DateTime<Utc>) -> i64 {
+        time.timestamp_millis()
+    }
+
     pub(crate) fn datetimetz_to_microseconds(time: &DateTime<Utc>) -> i64 {
         time.timestamp_micros()
+    }
+
+    pub(crate) fn milliseconds_to_datetimetz(millis: i64) -> DateTime<Utc> {
+        let (secs, rem) = (millis / 1_000, millis % 1_000);
+
+        DateTime::from_timestamp(secs, rem as u32 * 1_000_000).unwrap()
     }
 
     pub(crate) fn microseconds_to_datetimetz(micros: i64) -> DateTime<Utc> {

@@ -176,7 +176,7 @@ impl SchemaVisitor for GlueSchemaBuilder {
             _ => {
                 return Err(Error::new(
                     ErrorKind::FeatureUnsupported,
-                    "Conversion from 'Timestamptz' is not supported",
+                    format!("Conversion from '{p}' is not supported"),
                 ));
             }
         };

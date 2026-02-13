@@ -182,7 +182,7 @@ mod tests {
                 summary: MapArray
                 [
                   StructArray
-                -- validity:
+                -- validity: 
                 [
                 ]
                 [
@@ -196,7 +196,7 @@ mod tests {
                 ]
                 ],
                   StructArray
-                -- validity:
+                -- validity: 
                 [
                 ]
                 [

@@ -24,7 +24,7 @@ use arrow_array::types::{Decimal128Type, validate_decimal_precision_and_scale};
 use arrow_array::{
     BinaryArray, BooleanArray, Date32Array, Datum as ArrowDatum, Decimal128Array,
     FixedSizeBinaryArray, Float32Array, Float64Array, Int32Array, Int64Array, Scalar, StringArray,
-    TimestampMicrosecondArray,
+    TimestampMicrosecondArray, TimestampMillisecondArray, TimestampNanosecondArray,
 };
 use arrow_schema::{DataType, Field, Fields, Schema as ArrowSchema, TimeUnit};
 use num_bigint::BigInt;
@@ -401,11 +401,20 @@ impl ArrowSchemaVisitor for ArrowSchemaConverter {
             DataType::Time64(unit) if unit == &TimeUnit::Microsecond => {
                 Ok(Type::Primitive(PrimitiveType::Time))
             }
+            DataType::Timestamp(unit, None) if unit == &TimeUnit::Millisecond => {
+                Ok(Type::Primitive(PrimitiveType::TimestampMs))
+            }
             DataType::Timestamp(unit, None) if unit == &TimeUnit::Microsecond => {
                 Ok(Type::Primitive(PrimitiveType::Timestamp))
             }
             DataType::Timestamp(unit, None) if unit == &TimeUnit::Nanosecond => {
                 Ok(Type::Primitive(PrimitiveType::TimestampNs))
+            }
+            DataType::Timestamp(unit, Some(zone))
+                if unit == &TimeUnit::Millisecond
+                    && (zone.as_ref() == "UTC" || zone.as_ref() == "+00:00") =>
+            {
+                Ok(Type::Primitive(PrimitiveType::TimestamptzMs))
             }
             DataType::Timestamp(unit, Some(zone))
                 if unit == &TimeUnit::Microsecond
@@ -607,6 +616,13 @@ impl SchemaVisitor for ToArrowSchemaConverter {
             crate::spec::PrimitiveType::Time => Ok(ArrowSchemaOrFieldOrType::Type(
                 DataType::Time64(TimeUnit::Microsecond),
             )),
+            crate::spec::PrimitiveType::TimestampMs => Ok(ArrowSchemaOrFieldOrType::Type(
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+            )),
+            crate::spec::PrimitiveType::TimestamptzMs => Ok(ArrowSchemaOrFieldOrType::Type(
+                // Timestampz always stored as UTC
+                DataType::Timestamp(TimeUnit::Millisecond, Some(UTC_TIME_ZONE.into())),
+            )),
             crate::spec::PrimitiveType::Timestamp => Ok(ArrowSchemaOrFieldOrType::Type(
                 DataType::Timestamp(TimeUnit::Microsecond, None),
             )),
@@ -684,11 +700,23 @@ pub(crate) fn get_arrow_datum(datum: &Datum) -> Result<Arc<dyn ArrowDatum + Send
         (PrimitiveType::Date, PrimitiveLiteral::Int(value)) => {
             Ok(Arc::new(Date32Array::new_scalar(*value)))
         }
+        (PrimitiveType::TimestampMs, PrimitiveLiteral::Long(value)) => {
+            Ok(Arc::new(TimestampMillisecondArray::new_scalar(*value)))
+        }
+        (PrimitiveType::TimestamptzMs, PrimitiveLiteral::Long(value)) => Ok(Arc::new(Scalar::new(
+            TimestampMillisecondArray::new(vec![*value; 1].into(), None).with_timezone_utc(),
+        ))),
         (PrimitiveType::Timestamp, PrimitiveLiteral::Long(value)) => {
             Ok(Arc::new(TimestampMicrosecondArray::new_scalar(*value)))
         }
         (PrimitiveType::Timestamptz, PrimitiveLiteral::Long(value)) => Ok(Arc::new(Scalar::new(
             TimestampMicrosecondArray::new(vec![*value; 1].into(), None).with_timezone_utc(),
+        ))),
+        (PrimitiveType::TimestampNs, PrimitiveLiteral::Long(value)) => {
+            Ok(Arc::new(TimestampNanosecondArray::new_scalar(*value)))
+        }
+        (PrimitiveType::TimestamptzNs, PrimitiveLiteral::Long(value)) => Ok(Arc::new(Scalar::new(
+            TimestampNanosecondArray::new(vec![*value; 1].into(), None).with_timezone_utc(),
         ))),
         (PrimitiveType::Decimal { precision, scale }, PrimitiveLiteral::Int128(value)) => {
             let array = Decimal128Array::from_value(*value, 1)
@@ -732,6 +760,12 @@ pub(crate) fn get_parquet_stat_min_as_datum(
             };
 
             Some(Datum::time_micros(*val)?)
+        }
+        (PrimitiveType::TimestampMs, Statistics::Int64(stats)) => {
+            stats.min_opt().map(|val| Datum::timestamp_millis(*val))
+        }
+        (PrimitiveType::TimestamptzMs, Statistics::Int64(stats)) => {
+            stats.min_opt().map(|val| Datum::timestamptz_millis(*val))
         }
         (PrimitiveType::Timestamp, Statistics::Int64(stats)) => {
             stats.min_opt().map(|val| Datum::timestamp_micros(*val))
@@ -879,6 +913,12 @@ pub(crate) fn get_parquet_stat_max_as_datum(
             };
 
             Some(Datum::time_micros(*val)?)
+        }
+        (PrimitiveType::TimestampMs, Statistics::Int64(stats)) => {
+            stats.max_opt().map(|val| Datum::timestamp_millis(*val))
+        }
+        (PrimitiveType::TimestamptzMs, Statistics::Int64(stats)) => {
+            stats.max_opt().map(|val| Datum::timestamptz_millis(*val))
         }
         (PrimitiveType::Timestamp, Statistics::Int64(stats)) => {
             stats.max_opt().map(|val| Datum::timestamp_micros(*val))

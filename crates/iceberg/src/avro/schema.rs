@@ -229,6 +229,8 @@ impl SchemaVisitor for SchemaToAvroSchema {
             PrimitiveType::Double => AvroSchema::Double,
             PrimitiveType::Date => AvroSchema::Date,
             PrimitiveType::Time => AvroSchema::TimeMicros,
+            PrimitiveType::TimestampMs => AvroSchema::TimestampMillis,
+            PrimitiveType::TimestamptzMs => AvroSchema::TimestampMillis,
             PrimitiveType::Timestamp => AvroSchema::TimestampMicros,
             PrimitiveType::Timestamptz => AvroSchema::TimestampMicros,
             PrimitiveType::TimestampNs => AvroSchema::TimestampNanos,
@@ -515,6 +517,7 @@ impl AvroSchemaVisitor for AvroSchemaToSchema {
             }
             AvroSchema::Date => Type::Primitive(PrimitiveType::Date),
             AvroSchema::TimeMicros => Type::Primitive(PrimitiveType::Time),
+            AvroSchema::TimestampMillis => Type::Primitive(PrimitiveType::TimestampMs),
             AvroSchema::TimestampMicros => Type::Primitive(PrimitiveType::Timestamp),
             AvroSchema::TimestampNanos => Type::Primitive(PrimitiveType::TimestampNs),
             AvroSchema::Boolean => Type::Primitive(PrimitiveType::Boolean),

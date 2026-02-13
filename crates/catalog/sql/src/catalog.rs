@@ -419,7 +419,7 @@ impl Catalog for SqlCatalog {
 
         if exists {
             return Err(Error::new(
-                iceberg::ErrorKind::Unexpected,
+                iceberg::ErrorKind::NamespaceAlreadyExists,
                 format!("Namespace {namespace:?} already exists"),
             ));
         }
@@ -1447,17 +1447,15 @@ mod tests {
         let catalog = new_sql_catalog(warehouse_loc).await;
         let namespace_ident = NamespaceIdent::new("a".into());
         create_namespace(&catalog, &namespace_ident).await;
+        let error = catalog
+            .create_namespace(&namespace_ident, HashMap::new())
+            .await
+            .unwrap_err();
 
+        assert_eq!(error.kind(), super::ErrorKind::NamespaceAlreadyExists);
         assert_eq!(
-            catalog
-                .create_namespace(&namespace_ident, HashMap::new())
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!(
-                "Unexpected => Namespace {:?} already exists",
-                &namespace_ident
-            )
+            error.message(),
+            format!("Namespace {namespace_ident:?} already exists")
         );
 
         assert_eq!(
@@ -1711,14 +1709,17 @@ mod tests {
         let catalog = new_sql_catalog(warehouse_loc).await;
 
         let non_existent_namespace_ident = NamespaceIdent::new("abc".into());
+
+        let error = catalog
+            .drop_namespace(&non_existent_namespace_ident)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::NamespaceNotFound);
         assert_eq!(
-            catalog
-                .drop_namespace(&non_existent_namespace_ident)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => No such namespace: {non_existent_namespace_ident:?}")
-        )
+            error.message(),
+            format!("No such namespace: {non_existent_namespace_ident:?}")
+        );
     }
 
     #[tokio::test]
@@ -1729,14 +1730,16 @@ mod tests {
 
         let non_existent_namespace_ident =
             NamespaceIdent::from_vec(vec!["a".into(), "b".into()]).unwrap();
+        let error = catalog
+            .drop_namespace(&non_existent_namespace_ident)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::NamespaceNotFound);
         assert_eq!(
-            catalog
-                .drop_namespace(&non_existent_namespace_ident)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => No such namespace: {non_existent_namespace_ident:?}")
-        )
+            error.message(),
+            format!("No such namespace: {non_existent_namespace_ident:?}")
+        );
     }
 
     #[tokio::test]
@@ -1775,14 +1778,15 @@ mod tests {
         let catalog = new_sql_catalog(warehouse_loc).await;
 
         let non_existent_namespace_ident = NamespaceIdent::new("n1".into());
+        let error = catalog
+            .list_tables(&non_existent_namespace_ident)
+            .await
+            .unwrap_err();
 
+        assert_eq!(error.kind(), super::ErrorKind::NamespaceNotFound);
         assert_eq!(
-            catalog
-                .list_tables(&non_existent_namespace_ident)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => No such namespace: {non_existent_namespace_ident:?}"),
+            error.message(),
+            format!("No such namespace: {non_existent_namespace_ident:?}")
         );
     }
 
@@ -2010,21 +2014,23 @@ mod tests {
         let tmp_dir = TempDir::new().unwrap();
         let location = tmp_dir.path().to_str().unwrap().to_string();
 
+        let error = catalog
+            .create_table(
+                &namespace_ident,
+                TableCreation::builder()
+                    .name(table_name.into())
+                    .schema(simple_table_schema())
+                    .location(location)
+                    .build(),
+            )
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::TableAlreadyExists);
         assert_eq!(
-            catalog
-                .create_table(
-                    &namespace_ident,
-                    TableCreation::builder()
-                        .name(table_name.into())
-                        .schema(simple_table_schema())
-                        .location(location)
-                        .build()
-                )
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => Table {:?} already exists.", &table_ident)
-        );
+            error.message(),
+            format!("Table {table_ident:?} already exists.")
+        )
     }
 
     #[tokio::test]
@@ -2133,13 +2139,16 @@ mod tests {
         let non_existent_dst_namespace_ident = NamespaceIdent::new("n2".into());
         let dst_table_ident =
             TableIdent::new(non_existent_dst_namespace_ident.clone(), "tbl1".into());
+
+        let error = catalog
+            .rename_table(&src_table_ident, &dst_table_ident)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::NamespaceNotFound);
         assert_eq!(
-            catalog
-                .rename_table(&src_table_ident, &dst_table_ident)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => No such namespace: {non_existent_dst_namespace_ident:?}"),
+            error.message(),
+            format!("No such namespace: {non_existent_dst_namespace_ident:?}")
         );
     }
 
@@ -2152,13 +2161,15 @@ mod tests {
         let src_table_ident = TableIdent::new(namespace_ident.clone(), "tbl1".into());
         let dst_table_ident = TableIdent::new(namespace_ident.clone(), "tbl2".into());
 
+        let error = catalog
+            .rename_table(&src_table_ident, &dst_table_ident)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::TableNotFound);
         assert_eq!(
-            catalog
-                .rename_table(&src_table_ident, &dst_table_ident)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => No such table: {src_table_ident:?}"),
+            error.message(),
+            format!("No such table: {src_table_ident:?}")
         );
     }
 
@@ -2172,13 +2183,15 @@ mod tests {
         let dst_table_ident = TableIdent::new(namespace_ident.clone(), "tbl2".into());
         create_tables(&catalog, vec![&src_table_ident, &dst_table_ident]).await;
 
+        let error = catalog
+            .rename_table(&src_table_ident, &dst_table_ident)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::TableAlreadyExists);
         assert_eq!(
-            catalog
-                .rename_table(&src_table_ident, &dst_table_ident)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => Table {:?} already exists.", &dst_table_ident),
+            error.message(),
+            format!("Table {dst_table_ident:?} already exists.")
         );
     }
 
@@ -2191,14 +2204,12 @@ mod tests {
         let table_ident = TableIdent::new(namespace_ident.clone(), table_name.into());
         create_namespace(&catalog, &namespace_ident).await;
 
-        let err = catalog
-            .drop_table(&table_ident)
-            .await
-            .unwrap_err()
-            .to_string();
+        let error = catalog.drop_table(&table_ident).await.unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::TableNotFound);
         assert_eq!(
-            err,
-            "Unexpected => No such table: TableIdent { namespace: NamespaceIdent([\"a\"]), name: \"tbl1\" }"
+            error.message(),
+            "No such table: TableIdent { namespace: NamespaceIdent([\"a\"]), name: \"tbl1\" }"
         );
     }
 
@@ -2227,14 +2238,12 @@ mod tests {
         assert_table_eq(&table, &table_ident, &simple_table_schema());
 
         catalog.drop_table(&table_ident).await.unwrap();
-        let err = catalog
-            .load_table(&table_ident)
-            .await
-            .unwrap_err()
-            .to_string();
+        let err = catalog.load_table(&table_ident).await.unwrap_err();
+
+        assert_eq!(err.kind(), super::ErrorKind::TableNotFound);
         assert_eq!(
-            err,
-            "Unexpected => No such table: TableIdent { namespace: NamespaceIdent([\"a\"]), name: \"tbl1\" }"
+            err.message(),
+            "No such table: TableIdent { namespace: NamespaceIdent([\"a\"]), name: \"tbl1\" }"
         );
     }
 
@@ -2248,13 +2257,15 @@ mod tests {
         let table_ident = TableIdent::new(namespace_ident.clone(), table_name.into());
         create_table(&catalog, &table_ident).await;
 
+        let error = catalog
+            .register_table(&table_ident, warehouse_loc)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind(), super::ErrorKind::TableAlreadyExists);
         assert_eq!(
-            catalog
-                .register_table(&table_ident, warehouse_loc)
-                .await
-                .unwrap_err()
-                .to_string(),
-            format!("Unexpected => Table {:?} already exists.", &table_ident)
+            error.message(),
+            format!("Table {table_ident:?} already exists.")
         );
     }
 
