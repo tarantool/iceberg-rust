@@ -1044,7 +1044,7 @@ version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d314cc62af2b6b0c65780555abb4d02a03dd3b799cd42419044f0c38d99738c0"
 dependencies = [
- "darling 0.23.0",
+ "darling 0.20.11",
  "ident_case",
  "prettyplease",
  "proc-macro2",
@@ -1257,7 +1257,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -1494,16 +1494,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "darling"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25ae13da2f202d56bd7f91c25fba009e7717a1e4a1cc98a76d844b65ae912e9d"
-dependencies = [
- "darling_core 0.23.0",
- "darling_macro 0.23.0",
-]
-
-[[package]]
 name = "darling_core"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1524,19 +1514,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1247195ecd7e3c85f83c8d2a366e4210d588e802133e1e355180a9870b517ea4"
 dependencies = [
  "fnv",
- "ident_case",
- "proc-macro2",
- "quote",
- "strsim",
- "syn",
-]
-
-[[package]]
-name = "darling_core"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9865a50f7c335f53564bb694ef660825eb8610e0a53d3e11bf1b0d3df31e03b0"
-dependencies = [
  "ident_case",
  "proc-macro2",
  "quote",
@@ -1567,17 +1544,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "darling_macro"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac3984ec7bd6cfa798e62b4a642426a5be0e68f9401cfc2a01e3fa9ea2fcdb8d"
-dependencies = [
- "darling_core 0.23.0",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "dashmap"
 version = "6.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1593,13 +1559,12 @@ dependencies = [
 
 [[package]]
 name = "datafusion"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "arrow-schema",
  "async-trait",
- "bytes",
  "bzip2",
  "chrono",
  "datafusion-catalog",
@@ -1636,8 +1601,6 @@ dependencies = [
  "object_store",
  "parking_lot",
  "parquet",
- "rand 0.9.2",
- "regex",
  "sqlparser",
  "tempfile",
  "tokio",
@@ -1648,8 +1611,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-catalog"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1672,8 +1635,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-catalog-listing"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1694,8 +1657,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-cli"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1721,8 +1684,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-common"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "ahash",
  "apache-avro",
@@ -1747,8 +1710,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-common-runtime"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "futures",
  "log",
@@ -1757,8 +1720,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-datasource"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-compression",
@@ -1791,8 +1754,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-datasource-arrow"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "arrow-ipc",
@@ -1814,8 +1777,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-datasource-avro"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "apache-avro",
  "arrow",
@@ -1833,8 +1796,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-datasource-csv"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1855,8 +1818,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-datasource-json"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1871,15 +1834,14 @@ dependencies = [
  "datafusion-session",
  "futures",
  "object_store",
- "serde_json",
  "tokio",
  "tokio-stream",
 ]
 
 [[package]]
 name = "datafusion-datasource-parquet"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1889,6 +1851,7 @@ dependencies = [
  "datafusion-datasource",
  "datafusion-execution",
  "datafusion-expr",
+ "datafusion-functions",
  "datafusion-functions-aggregate-common",
  "datafusion-physical-expr",
  "datafusion-physical-expr-adapter",
@@ -1907,18 +1870,17 @@ dependencies = [
 
 [[package]]
 name = "datafusion-doc"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 
 [[package]]
 name = "datafusion-execution"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "arrow-buffer",
  "async-trait",
- "chrono",
  "dashmap",
  "datafusion-common",
  "datafusion-expr",
@@ -1935,8 +1897,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-expr"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1957,8 +1919,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-expr-common"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -1969,8 +1931,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "arrow-buffer",
@@ -2000,8 +1962,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions-aggregate"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "ahash",
  "arrow",
@@ -2021,8 +1983,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions-aggregate-common"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "ahash",
  "arrow",
@@ -2033,8 +1995,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions-nested"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "arrow-ord",
@@ -2057,8 +2019,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions-table"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -2072,8 +2034,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions-window"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2089,8 +2051,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-functions-window-common"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "datafusion-common",
  "datafusion-physical-expr-common",
@@ -2098,8 +2060,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-macros"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "datafusion-doc",
  "quote",
@@ -2108,8 +2070,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-optimizer"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "chrono",
@@ -2127,8 +2089,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-physical-expr"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "ahash",
  "arrow",
@@ -2142,7 +2104,6 @@ dependencies = [
  "indexmap 2.13.0",
  "itertools 0.14.0",
  "parking_lot",
- "paste",
  "petgraph",
  "recursive",
  "tokio",
@@ -2150,8 +2111,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-physical-expr-adapter"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2164,8 +2125,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-physical-expr-common"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "ahash",
  "arrow",
@@ -2180,8 +2141,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-physical-optimizer"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2198,8 +2159,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-physical-plan"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "ahash",
  "arrow",
@@ -2229,8 +2190,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-pruning"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2239,14 +2200,13 @@ dependencies = [
  "datafusion-physical-expr",
  "datafusion-physical-expr-common",
  "datafusion-physical-plan",
- "itertools 0.14.0",
  "log",
 ]
 
 [[package]]
 name = "datafusion-session"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "async-trait",
  "datafusion-common",
@@ -2258,8 +2218,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-spark"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "bigdecimal",
@@ -2284,8 +2244,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-sql"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "bigdecimal",
@@ -2302,8 +2262,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-sqllogictest"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "arrow",
  "async-trait",
@@ -2327,8 +2287,8 @@ dependencies = [
 
 [[package]]
 name = "datafusion-substrait"
-version = "53.0.0"
-source = "git+https://github.com/apache/datafusion?branch=branch-53#23e7a19186e71044a610e5bfcc4e647598bf557a"
+version = "52.3.0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=askalt%2Fnew-bump-candidate#cc9f2ea94c928f9ecedbbf10cd6097d5e8180fcc"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -5825,6 +5785,7 @@ version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
 dependencies = [
+ "indexmap 2.13.0",
  "itoa",
  "memchr",
  "serde",
@@ -6414,11 +6375,12 @@ dependencies = [
 
 [[package]]
 name = "substrait"
-version = "0.62.2"
+version = "0.63.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62fc4b483a129b9772ccb9c3f7945a472112fdd9140da87f8a4e7f1d44e045d0"
+checksum = "e620ff4d5c02fd6f7752931aa74b16a26af66a63022cc1ad412c77edbe0bab47"
 dependencies = [
  "heck",
+ "indexmap 2.13.0",
  "pbjson",
  "pbjson-build",
  "pbjson-types",
@@ -7386,7 +7348,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
