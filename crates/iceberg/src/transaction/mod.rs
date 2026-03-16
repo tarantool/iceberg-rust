@@ -67,6 +67,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use backon::{BackoffBuilder, ExponentialBackoff, ExponentialBuilder, RetryableWithContext};
+pub use update_schema::AddColumn;
 
 use crate::error::Result;
 use crate::spec::TableProperties;
