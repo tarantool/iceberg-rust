@@ -54,6 +54,7 @@ mod action;
 
 pub use action::*;
 mod append;
+mod rollback_to_snapshot;
 mod snapshot;
 mod sort_order;
 mod update_location;
@@ -71,6 +72,7 @@ use crate::spec::TableProperties;
 use crate::table::Table;
 use crate::transaction::action::BoxedTransactionAction;
 use crate::transaction::append::FastAppendAction;
+use crate::transaction::rollback_to_snapshot::RollbackToSnapshotAction;
 use crate::transaction::sort_order::ReplaceSortOrderAction;
 use crate::transaction::update_location::UpdateLocationAction;
 use crate::transaction::update_properties::UpdatePropertiesAction;
@@ -144,6 +146,11 @@ impl Transaction {
     /// Creates replace sort order action.
     pub fn replace_sort_order(&self) -> ReplaceSortOrderAction {
         ReplaceSortOrderAction::new()
+    }
+
+    /// Creates rollback to snapshot action.
+    pub fn rollback_to_snapshot(&self) -> RollbackToSnapshotAction {
+        RollbackToSnapshotAction::new()
     }
 
     /// Set the location of table
