@@ -25,6 +25,7 @@ use datafusion::arrow::datatypes::{
     DataType, Field, Schema as ArrowSchema, SchemaRef as ArrowSchemaRef,
 };
 use datafusion::common::Result as DFResult;
+use datafusion::common::tree_node::TreeNodeRecursion;
 use datafusion::error::DataFusionError;
 use datafusion::execution::{SendableRecordBatchStream, TaskContext};
 use datafusion::physical_expr::{EquivalenceProperties, Partitioning};
@@ -146,6 +147,15 @@ impl ExecutionPlan for IcebergWriteExec {
     /// Prevents the introduction of additional `RepartitionExec` and processing input in parallel.
     fn benefits_from_input_partitioning(&self) -> Vec<bool> {
         vec![false]
+    }
+
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(
+            &dyn datafusion::physical_plan::PhysicalExpr,
+        ) -> datafusion::error::Result<TreeNodeRecursion>,
+    ) -> datafusion::error::Result<TreeNodeRecursion> {
+        Ok(TreeNodeRecursion::Continue)
     }
 
     fn maintains_input_order(&self) -> Vec<bool> {
@@ -385,6 +395,15 @@ mod tests {
 
         fn properties(&self) -> &Arc<PlanProperties> {
             &self.properties
+        }
+
+        fn apply_expressions(
+            &self,
+            _f: &mut dyn FnMut(
+                &dyn datafusion::physical_plan::PhysicalExpr,
+            ) -> datafusion::error::Result<TreeNodeRecursion>,
+        ) -> datafusion::error::Result<TreeNodeRecursion> {
+            Ok(TreeNodeRecursion::Continue)
         }
 
         fn children(&self) -> Vec<&Arc<dyn ExecutionPlan>> {

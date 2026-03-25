@@ -18,6 +18,7 @@
 use std::sync::Arc;
 
 use datafusion::catalog::TableProvider;
+use datafusion::common::tree_node::TreeNodeRecursion;
 use datafusion::physical_expr::EquivalenceProperties;
 use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
 use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
@@ -60,6 +61,15 @@ impl DisplayAs for IcebergMetadataScan {
 impl ExecutionPlan for IcebergMetadataScan {
     fn name(&self) -> &str {
         "IcebergMetadataScan"
+    }
+
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(
+            &dyn datafusion::physical_plan::PhysicalExpr,
+        ) -> datafusion::error::Result<TreeNodeRecursion>,
+    ) -> datafusion::error::Result<TreeNodeRecursion> {
+        Ok(TreeNodeRecursion::Continue)
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

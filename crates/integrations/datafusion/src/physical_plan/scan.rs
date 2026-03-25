@@ -22,6 +22,7 @@ use std::vec;
 
 use datafusion::arrow::array::RecordBatch;
 use datafusion::arrow::datatypes::SchemaRef as ArrowSchemaRef;
+use datafusion::common::tree_node::TreeNodeRecursion;
 use datafusion::error::Result as DFResult;
 use datafusion::execution::{SendableRecordBatchStream, TaskContext};
 use datafusion::physical_expr::EquivalenceProperties;
@@ -128,6 +129,15 @@ impl ExecutionPlan for IcebergTableScan {
 
     fn children(&self) -> Vec<&Arc<dyn ExecutionPlan + 'static>> {
         vec![]
+    }
+
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(
+            &dyn datafusion::physical_plan::PhysicalExpr,
+        ) -> datafusion::error::Result<TreeNodeRecursion>,
+    ) -> datafusion::error::Result<TreeNodeRecursion> {
+        Ok(TreeNodeRecursion::Continue)
     }
 
     fn with_new_children(
