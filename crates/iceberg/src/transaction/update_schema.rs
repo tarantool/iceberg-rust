@@ -48,6 +48,8 @@ pub struct AddColumn {
     #[builder(default = false)]
     required: bool,
     field_type: Type,
+    #[builder(default = None)]
+    id: Option<i32>,
     #[builder(default = None, setter(strip_option, into))]
     doc: Option<String>,
     #[builder(default = None, setter(strip_option))]
@@ -91,7 +93,7 @@ impl AddColumn {
 
     fn to_nested_field(&self) -> NestedFieldRef {
         let mut field = NestedField::new(
-            DEFAULT_ID,
+            self.id.unwrap_or(DEFAULT_ID),
             self.name.clone(),
             self.field_type.clone(),
             self.required,
@@ -457,7 +459,7 @@ impl TransactionAction for UpdateSchemaAction {
             };
 
             // Assign fresh IDs immediately, preserving insertion order.
-            let field = if self.auto_assign_ids {
+            let field = if self.auto_assign_ids && pending_field.id == DEFAULT_ID {
                 assign_fresh_ids(&pending_field, &mut last_column_id)
             } else {
                 pending_field
