@@ -23,6 +23,7 @@ use datafusion::arrow::array::{Array, ArrayRef, RecordBatch, StringArray, UInt64
 use datafusion::arrow::datatypes::{
     DataType, Field, Schema as ArrowSchema, SchemaRef as ArrowSchemaRef,
 };
+use datafusion::common::tree_node::TreeNodeRecursion;
 use datafusion::common::{DataFusionError, Result as DFResult};
 use datafusion::execution::{SendableRecordBatchStream, TaskContext};
 use datafusion::physical_expr::{EquivalenceProperties, Partitioning};
@@ -131,6 +132,15 @@ impl ExecutionPlan for IcebergCommitExec {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(
+            &dyn datafusion::physical_plan::PhysicalExpr,
+        ) -> DFResult<TreeNodeRecursion>,
+    ) -> DFResult<TreeNodeRecursion> {
+        Ok(TreeNodeRecursion::Continue)
     }
 
     fn properties(&self) -> &Arc<PlanProperties> {
@@ -334,6 +344,15 @@ mod tests {
 
         fn as_any(&self) -> &dyn Any {
             self
+        }
+
+        fn apply_expressions(
+            &self,
+            _f: &mut dyn FnMut(
+                &dyn datafusion::physical_plan::PhysicalExpr,
+            ) -> datafusion::error::Result<TreeNodeRecursion>,
+        ) -> datafusion::error::Result<TreeNodeRecursion> {
+            Ok(TreeNodeRecursion::Continue)
         }
 
         fn schema(&self) -> Arc<ArrowSchema> {
