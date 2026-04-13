@@ -48,6 +48,8 @@ pub(crate) const INT_MAX: i32 = 2147483647;
 pub(crate) const INT_MIN: i32 = -2147483648;
 pub(crate) const LONG_MAX: i64 = 9223372036854775807;
 pub(crate) const LONG_MIN: i64 = -9223372036854775808;
+pub(crate) const FLOAT_MAX: f32 = 3.4028235e38;
+pub(crate) const FLOAT_MIN: f32 = -3.4028235e38;
 
 /// Literal associated with its type. The value and type pair is checked when construction, so the type and value is
 /// guaranteed to be correct when used.
@@ -1109,6 +1111,16 @@ impl Datum {
         })
     }
 
+    fn double_to_float<T: Into<f64> + PartialOrd<f64>>(val: T) -> Datum {
+        if val > FLOAT_MAX as f64 {
+            Datum::new(PrimitiveType::Float, PrimitiveLiteral::AboveMax)
+        } else if val < FLOAT_MIN as f64 {
+            Datum::new(PrimitiveType::Float, PrimitiveLiteral::BelowMin)
+        } else {
+            Datum::float(val.into() as f32)
+        }
+    }
+
     /// Convert the datum to `target_type`.
     pub fn to(self, target_type: &Type) -> Result<Datum> {
         match target_type {
@@ -1145,6 +1157,9 @@ impl Datum {
                     }
                     (PrimitiveLiteral::String(val), _, PrimitiveType::Timestamptz) => {
                         Datum::timestamptz_from_str(val)
+                    }
+                    (PrimitiveLiteral::Double(val), _, PrimitiveType::Float) => {
+                        Ok(Datum::double_to_float(**val))
                     }
 
                     // TODO: implement more type conversions
