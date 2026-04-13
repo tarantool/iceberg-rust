@@ -1352,3 +1352,39 @@ fn test_date_from_json_as_number() {
 
     // Both formats should produce the same Literal value
 }
+
+#[test]
+fn test_iceberg_double_convert_to_float() {
+    let float_below_min = Datum::new(PrimitiveType::Float, PrimitiveLiteral::BelowMin);
+    let float_above_max = Datum::new(PrimitiveType::Float, PrimitiveLiteral::AboveMax);
+
+    let test_data = [
+        (Datum::double(-f64::NAN), Datum::float(-f32::NAN)),
+        (Datum::double(-f64::INFINITY), float_below_min.clone()),
+        (Datum::double(f64::MIN), float_below_min),
+        (Datum::double(f32::MIN as f64), Datum::float(f32::MIN)),
+        (Datum::double(-1.0), Datum::float(-1.0)),
+        (Datum::double(-f64::MIN_POSITIVE), Datum::float(-0.0)),
+        (
+            Datum::double(-f32::MIN_POSITIVE as f64),
+            Datum::float(-f32::MIN_POSITIVE),
+        ),
+        (Datum::double(-0.0), Datum::float(-0.0)),
+        (Datum::double(0.0), Datum::float(0.0)),
+        (Datum::double(f64::MIN_POSITIVE), Datum::float(0.0)),
+        (
+            Datum::double(f32::MIN_POSITIVE as f64),
+            Datum::float(f32::MIN_POSITIVE),
+        ),
+        (Datum::double(1.0), Datum::float(1.0)),
+        (Datum::double(f32::MAX as f64), Datum::float(f32::MAX)),
+        (Datum::double(f64::MAX), float_above_max.clone()),
+        (Datum::double(f64::INFINITY), float_above_max),
+        (Datum::double(f64::NAN), Datum::float(f32::NAN)),
+    ];
+
+    for (datum, expected) in test_data {
+        let result = datum.to(&Primitive(PrimitiveType::Float)).unwrap();
+        assert_eq!(result, expected);
+    }
+}
