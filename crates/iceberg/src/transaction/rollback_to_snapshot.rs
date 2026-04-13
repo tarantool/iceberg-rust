@@ -29,6 +29,7 @@ use crate::{Error, ErrorKind, TableRequirement, TableUpdate};
 #[derive(Default)]
 pub struct RollbackToSnapshotAction {
     snapshot_id: Option<i64>,
+    rollback_schema: bool,
 }
 
 impl RollbackToSnapshotAction {
@@ -42,6 +43,12 @@ impl RollbackToSnapshotAction {
         self.snapshot_id = Some(snapshot_id);
         self
     }
+
+    /// Updates the table's current schema to match the schema of the target snapshot.
+    pub fn with_schema_rollback(mut self) -> Self {
+        self.rollback_schema = true;
+        self
+    }
 }
 
 #[async_trait]
@@ -51,10 +58,9 @@ impl TransactionAction for RollbackToSnapshotAction {
             return Err(Error::new(ErrorKind::DataInvalid, "snapshot id is not set"));
         };
 
-        table
+        let snapshot = table
             .metadata()
-            .snapshots()
-            .find(|s| s.snapshot_id() == snapshot_id)
+            .snapshot_by_id(snapshot_id)
             .ok_or_else(|| {
                 Error::new(
                     ErrorKind::DataInvalid,
@@ -68,12 +74,12 @@ impl TransactionAction for RollbackToSnapshotAction {
         let reference =
             SnapshotReference::new(snapshot_id, SnapshotRetention::branch(None, None, None));
 
-        let updates = vec![TableUpdate::SetSnapshotRef {
+        let mut updates = vec![TableUpdate::SetSnapshotRef {
             ref_name: MAIN_BRANCH.to_string(),
             reference,
         }];
 
-        let requirements = vec![
+        let mut requirements = vec![
             TableRequirement::UuidMatch {
                 uuid: table.metadata().uuid(),
             },
@@ -82,6 +88,17 @@ impl TransactionAction for RollbackToSnapshotAction {
                 snapshot_id: table.metadata().current_snapshot_id(),
             },
         ];
+
+        let current_schema_id = table.metadata().current_schema_id();
+        if self.rollback_schema
+            && let Some(snapshot_schema_id) = snapshot.schema_id()
+            && current_schema_id != snapshot_schema_id
+        {
+            updates.push(TableUpdate::SetCurrentSchema {
+                schema_id: snapshot_schema_id,
+            });
+            requirements.push(TableRequirement::CurrentSchemaIdMatch { current_schema_id });
+        }
 
         Ok(ActionCommit::new(updates, requirements))
     }
