@@ -31,7 +31,7 @@ use crate::{Error, ErrorKind, Result, TableRequirement, TableUpdate};
 /// Sentinel parent ID representing the table root (top-level columns).
 const TABLE_ROOT_ID: i32 = -1;
 // Default ID for a new column. This will be re-assigned to a fresh ID at commit time.
-const DEFAULT_ID: i32 = 0;
+const DEFAULT_FIELD_ID: i32 = 0;
 
 #[derive(TypedBuilder)]
 /// Declarative specification for adding a column in [`UpdateSchemaAction`].
@@ -60,18 +60,18 @@ pub struct AddColumn {
 
 impl AddColumn {
     /// Create a root-level optional column specification.
-    pub fn optional(name: impl ToString, field_type: Type) -> Self {
+    pub fn optional(name: impl Into<String>, field_type: Type) -> Self {
         Self::builder()
-            .name(name.to_string())
+            .name(name.into())
             .field_type(field_type)
             .required(false)
             .build()
     }
 
     /// Create a root-level required column specification.
-    pub fn required(name: impl ToString, field_type: Type, initial_default: Literal) -> Self {
+    pub fn required(name: impl Into<String>, field_type: Type, initial_default: Literal) -> Self {
         Self::builder()
-            .name(name.to_string())
+            .name(name.into())
             .field_type(field_type)
             .required(true)
             .initial_default(initial_default.clone())
@@ -80,20 +80,20 @@ impl AddColumn {
     }
 
     /// Return a copy with an updated parent path.
-    pub fn with_parent(mut self, parent: impl ToString) -> Self {
-        self.parent = Some(parent.to_string());
+    pub fn with_parent(mut self, parent: impl Into<String>) -> Self {
+        self.parent = Some(parent.into());
         self
     }
 
     /// Return a copy with an updated doc string.
-    pub fn with_doc(mut self, doc: impl ToString) -> Self {
-        self.doc = Some(doc.to_string());
+    pub fn with_doc(mut self, doc: impl Into<String>) -> Self {
+        self.doc = Some(doc.into());
         self
     }
 
     fn to_nested_field(&self) -> NestedFieldRef {
         let mut field = NestedField::new(
-            self.id.unwrap_or(DEFAULT_ID),
+            self.id.unwrap_or(DEFAULT_FIELD_ID),
             self.name.clone(),
             self.field_type.clone(),
             self.required,
@@ -130,7 +130,7 @@ impl AddColumn {
 /// ```
 pub struct UpdateSchemaAction {
     additions: Vec<AddColumn>,
-    deletes: Vec<String>,
+    deletions: Vec<String>,
     auto_assign_ids: bool,
 }
 
@@ -139,12 +139,10 @@ impl UpdateSchemaAction {
     pub(crate) fn new() -> Self {
         Self {
             additions: Vec::new(),
-            deletes: Vec::new(),
+            deletions: Vec::new(),
             auto_assign_ids: true,
         }
     }
-
-    // --- Root-level additions ---
 
     /// Add a column to the table schema.
     ///
@@ -156,13 +154,11 @@ impl UpdateSchemaAction {
         self
     }
 
-    // --- Other builder methods ---
-
     /// Record a column deletion by name.
     ///
     /// At commit time, the column must exist in the current schema.
-    pub fn delete_column(mut self, name: impl ToString) -> Self {
-        self.deletes.push(name.to_string());
+    pub fn delete_column(mut self, name: impl Into<String>) -> Self {
+        self.deletions.push(name.into());
         self
     }
 
@@ -172,8 +168,6 @@ impl UpdateSchemaAction {
         self.auto_assign_ids = false;
         self
     }
-
-    // --- Internal helpers ---
 }
 
 // ---------------------------------------------------------------------------
@@ -355,15 +349,115 @@ fn rebuild_field(
 // TransactionAction implementation
 // ---------------------------------------------------------------------------
 
+/// Validate and process a single column addition.
+///
+/// Returns the parent ID where the column should be added and the field with
+/// assigned IDs (if auto-assignment is enabled).
+fn process_addition(
+    add: &AddColumn,
+    base_schema: &Schema,
+    delete_ids: &HashSet<i32>,
+    auto_assign_ids: bool,
+    last_column_id: &mut i32,
+) -> Result<(i32, NestedFieldRef)> {
+    let pending_field = add.to_nested_field();
+
+    // Check that name does not contain ".".
+    if pending_field.name.contains('.') {
+        return Err(Error::new(
+            ErrorKind::PreconditionFailed,
+            format!(
+                "Cannot add column with ambiguous name: {}. Use `AddColumn::with_parent` to add a column to a nested struct.",
+                pending_field.name
+            ),
+        ));
+    }
+
+    // Required columns without an initial default need allow_incompatible_changes.
+    if pending_field.required && pending_field.initial_default.is_none() {
+        return Err(Error::new(
+            ErrorKind::PreconditionFailed,
+            format!(
+                "Incompatible change: cannot add required column without an initial default: {}",
+                pending_field.name
+            ),
+        ));
+    }
+
+    let parent_id = match &add.parent {
+        None => {
+            // Root-level: check name conflict against root-level fields.
+            if let Some(existing) = base_schema.field_by_name(&pending_field.name)
+                && !delete_ids.contains(&existing.id)
+            {
+                return Err(Error::new(
+                    ErrorKind::PreconditionFailed,
+                    format!(
+                        "Cannot add column, name already exists: {}",
+                        pending_field.name
+                    ),
+                ));
+            }
+            TABLE_ROOT_ID
+        }
+        Some(parent_path) => {
+            // Nested: resolve parent, check name conflict within parent struct.
+            let (parent_field_id, parent_struct) = resolve_parent_target(base_schema, parent_path)?;
+
+            // Check if the parent field is being deleted - cannot add to a deleted parent.
+            let parent_field = base_schema
+                .field_by_name(parent_path)
+                .expect("parent field should exist (already validated by resolve_parent_target)");
+
+            if delete_ids.contains(&parent_field.id) {
+                return Err(Error::new(
+                    ErrorKind::PreconditionFailed,
+                    format!(
+                        "Cannot add column to parent that is being deleted: '{}'",
+                        parent_path
+                    ),
+                ));
+            }
+
+            // Check for name conflict within the parent struct.
+            if let Some(existing) = parent_struct.field_by_name(&pending_field.name)
+                && !delete_ids.contains(&existing.id)
+            {
+                return Err(Error::new(
+                    ErrorKind::PreconditionFailed,
+                    format!(
+                        "Cannot add column, name already exists in '{}': {}",
+                        parent_path, pending_field.name
+                    ),
+                ));
+            }
+
+            parent_field_id
+        }
+    };
+
+    // Assign fresh IDs if auto-assignment is enabled and field has placeholder ID.
+    let field = if auto_assign_ids && pending_field.id == DEFAULT_FIELD_ID {
+        assign_fresh_ids(&pending_field, last_column_id)
+    } else {
+        pending_field
+    };
+
+    Ok((parent_id, field))
+}
+
 #[async_trait]
 impl TransactionAction for UpdateSchemaAction {
     async fn commit(self: Arc<Self>, table: &Table) -> Result<ActionCommit> {
         let base_schema = table.metadata().current_schema();
         let mut last_column_id = table.metadata().last_column_id();
 
+        // Collect identifier field IDs for checking during deletion.
+        let identifier_field_ids: HashSet<i32> = base_schema.identifier_field_ids().collect();
+
         // --- 1. Validate deletes ---
         let delete_ids = self
-            .deletes
+            .deletions
             .iter()
             .map(|name: &String| {
                 base_schema
@@ -375,103 +469,38 @@ impl TransactionAction for UpdateSchemaAction {
                         )
                     })
                     .and_then(|field| {
-                        match base_schema
-                            .identifier_field_ids()
-                            .find(|id| *id == field.id)
-                        {
-                            Some(_) => Err(Error::new(
+                        if identifier_field_ids.contains(&field.id) {
+                            Err(Error::new(
                                 ErrorKind::PreconditionFailed,
                                 format!("Cannot delete identifier field: {name}"),
-                            )),
-                            None => Ok(field.id),
+                            ))
+                        } else {
+                            Ok(field.id)
                         }
                     })
             })
             .collect::<Result<HashSet<i32>>>()?;
 
-        // --- 2. Resolve parents, validate additions, assign IDs, and group by parent ID ---
+        // --- 2. Process additions and group by parent ID ---
         // We assign IDs inline (before grouping) to preserve the caller's insertion order,
         // since HashMap iteration order is non-deterministic.
         let mut additions_by_parent: HashMap<i32, Vec<NestedFieldRef>> = HashMap::new();
 
         for add in &self.additions {
-            let pending_field = add.to_nested_field();
-
-            // Check that name does not contain ".".
-            if pending_field.name.contains('.') {
-                return Err(Error::new(
-                    ErrorKind::PreconditionFailed,
-                    format!(
-                        "Cannot add column with ambiguous name: {}. Use `AddColumn::with_parent` to add a column to a nested struct.",
-                        pending_field.name
-                    ),
-                ));
-            }
-
-            // Required columns without an initial default need allow_incompatible_changes.
-            if pending_field.required && pending_field.initial_default.is_none() {
-                return Err(Error::new(
-                    ErrorKind::PreconditionFailed,
-                    format!(
-                        "Incompatible change: cannot add required column without an initial default: {}",
-                        pending_field.name
-                    ),
-                ));
-            }
-
-            let parent_id = match &add.parent {
-                None => {
-                    // Root-level: check name conflict against root-level fields.
-                    if let Some(existing) = base_schema.field_by_name(&pending_field.name)
-                        && !delete_ids.contains(&existing.id)
-                    {
-                        return Err(Error::new(
-                            ErrorKind::PreconditionFailed,
-                            format!(
-                                "Cannot add column, name already exists: {}",
-                                pending_field.name
-                            ),
-                        ));
-                    }
-                    TABLE_ROOT_ID
-                }
-                Some(parent_path) => {
-                    // Nested: resolve parent, check name conflict within parent struct.
-                    let (parent_id, parent_struct) =
-                        resolve_parent_target(base_schema, parent_path)?;
-
-                    if parent_struct.fields().iter().any(|f| {
-                        f.name == pending_field.name
-                            && !delete_ids.contains(&f.id)
-                            && !delete_ids.contains(&parent_id)
-                    }) {
-                        return Err(Error::new(
-                            ErrorKind::PreconditionFailed,
-                            format!(
-                                "Cannot add column, name already exists in '{}': {}",
-                                parent_path, pending_field.name
-                            ),
-                        ));
-                    }
-
-                    parent_id
-                }
-            };
-
-            // Assign fresh IDs immediately, preserving insertion order.
-            let field = if self.auto_assign_ids && pending_field.id == DEFAULT_ID {
-                assign_fresh_ids(&pending_field, &mut last_column_id)
-            } else {
-                pending_field
-            };
-
+            let (parent_id, field) = process_addition(
+                add,
+                base_schema,
+                &delete_ids,
+                self.auto_assign_ids,
+                &mut last_column_id,
+            )?;
             additions_by_parent
                 .entry(parent_id)
                 .or_default()
                 .push(field);
         }
 
-        // --- 4. Rebuild the schema tree with additions and deletions ---
+        // --- 3. Rebuild the schema tree with additions and deletions ---
         let new_fields = rebuild_fields(
             base_schema.as_struct().fields(),
             &additions_by_parent,
@@ -479,7 +508,7 @@ impl TransactionAction for UpdateSchemaAction {
             TABLE_ROOT_ID,
         );
 
-        // --- 5. Build the new schema ---
+        // --- 4. Build the new schema ---
         let schema = Schema::builder()
             .with_fields(new_fields)
             .with_identifier_field_ids(base_schema.identifier_field_ids())
@@ -510,7 +539,7 @@ mod tests {
     use crate::transaction::Transaction;
     use crate::transaction::action::{ApplyTransactionAction, TransactionAction};
     use crate::transaction::tests::make_v2_table;
-    use crate::transaction::update_schema::{AddColumn, DEFAULT_ID, UpdateSchemaAction};
+    use crate::transaction::update_schema::{AddColumn, DEFAULT_FIELD_ID, UpdateSchemaAction};
     use crate::{ErrorKind, TableIdent, TableRequirement, TableUpdate};
 
     // The V2 test table has:
@@ -1104,10 +1133,18 @@ mod tests {
         let action = tx.update_schema().add_column(AddColumn::optional(
             "address",
             Type::Struct(StructType::new(vec![
-                NestedField::optional(DEFAULT_ID, "street", Type::Primitive(PrimitiveType::String))
-                    .into(),
-                NestedField::optional(DEFAULT_ID, "city", Type::Primitive(PrimitiveType::String))
-                    .into(),
+                NestedField::optional(
+                    DEFAULT_FIELD_ID,
+                    "street",
+                    Type::Primitive(PrimitiveType::String),
+                )
+                .into(),
+                NestedField::optional(
+                    DEFAULT_FIELD_ID,
+                    "city",
+                    Type::Primitive(PrimitiveType::String),
+                )
+                .into(),
             ])),
         ));
 
@@ -1135,5 +1172,56 @@ mod tests {
             .field_by_name("address.city")
             .expect("address.city should exist");
         assert_eq!(city.id, 6);
+    }
+
+    // -----------------------------------------------------------------------
+    // Delete parent and add to deleted parent tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_add_column_to_deleted_column_parent_fails() {
+        let table = make_v2_table_with_nested();
+        let tx = Transaction::new(&table);
+
+        // Delete "person" struct and try to add a column to it - should fail.
+        let action = tx.update_schema().delete_column("person").add_column(
+            AddColumn::optional("email", Type::Primitive(PrimitiveType::String))
+                .with_parent("person"),
+        );
+
+        let err = match Arc::new(action).commit(&table).await {
+            Err(e) => e,
+            Ok(_) => panic!("should reject adding to a deleted parent"),
+        };
+        assert_eq!(err.kind(), ErrorKind::PreconditionFailed);
+        assert!(
+            err.message().contains("being deleted"),
+            "error should mention deleted parent, got: {}",
+            err.message()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_add_column_with_same_name_as_child_of_deleted_parent_fails() {
+        let table = make_v2_table_with_nested();
+        let tx = Transaction::new(&table);
+
+        // Delete "person" struct (which has a child "name") and try to add a column
+        // named "name" to the deleted parent - should fail because parent is being deleted.
+        let action = tx.update_schema().delete_column("person").add_column(
+            AddColumn::optional("name", Type::Primitive(PrimitiveType::String))
+                .with_parent("person"),
+        );
+
+        let err = match Arc::new(action).commit(&table).await {
+            Err(e) => e,
+            Ok(_) => panic!("should reject adding to a deleted parent"),
+        };
+        assert_eq!(err.kind(), ErrorKind::PreconditionFailed);
+        assert!(
+            err.message().contains("being deleted"),
+            "error should mention deleted parent, got: {}",
+            err.message()
+        );
     }
 }
