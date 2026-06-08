@@ -43,10 +43,16 @@ enum OpTransformedResult {
 /// If none of the filters could be converted, return `None` which adds no predicates to the scan operation.
 /// If the conversion was successful, return the converted predicates combined with an AND operator.
 pub fn convert_filters_to_predicate(filters: &[Expr]) -> Option<Predicate> {
-    filters
-        .iter()
-        .filter_map(convert_filter_to_predicate)
+    convert_filters_to_predicates(filters)
+        .flatten()
         .reduce(Predicate::and)
+}
+
+/// Converts DataFusion filters ([`Expr`]) to an iceberg predicate ([`Predicate`]).
+/// Result iterator has the same length as the filter list.
+/// `None` item shows that such filter cannot be converted.
+pub fn convert_filters_to_predicates(filters: &[Expr]) -> impl Iterator<Item = Option<Predicate>> {
+    filters.iter().map(convert_filter_to_predicate)
 }
 
 fn convert_filter_to_predicate(expr: &Expr) -> Option<Predicate> {
@@ -333,7 +339,7 @@ mod tests {
     use iceberg::spec::Datum;
     use parquet::arrow::PARQUET_FIELD_ID_META_KEY;
 
-    use super::convert_filters_to_predicate;
+    use super::{convert_filters_to_predicate, convert_filters_to_predicates};
 
     fn create_test_schema() -> DFSchema {
         let arrow_schema = Schema::new(vec![
@@ -739,5 +745,73 @@ mod tests {
         let sql = "isnan(qux + 1)";
         let predicate = convert_to_iceberg_predicate(sql);
         assert_eq!(predicate, None);
+    }
+
+    fn convert_to_iceberg_predicates(sql: &str) -> Vec<Option<Predicate>> {
+        let df_schema = create_test_schema();
+        let expr = SessionContext::new()
+            .parse_sql_expr(sql, &df_schema)
+            .unwrap();
+        let exprs: Vec<Expr> = split_conjunction(&expr).into_iter().cloned().collect();
+        convert_filters_to_predicates(&exprs[..]).collect()
+    }
+
+    #[test]
+    fn test_predicates_conversion_with_and_condition_supported() {
+        let sql = "foo > 1 and bar = 'test'";
+        let predicates = convert_to_iceberg_predicates(sql);
+        let expected_predicates = [
+            Some(Reference::new("foo").greater_than(Datum::long(1))),
+            Some(Reference::new("bar").equal_to(Datum::string("test"))),
+        ];
+        assert_eq!(predicates, expected_predicates);
+    }
+
+    #[test]
+    fn test_predicates_conversion_with_and_condition_unsupported() {
+        let sql = "foo > 1 and length(bar) = 1";
+        let predicates = convert_to_iceberg_predicates(sql);
+        let expected_predicates = [
+            Some(Reference::new("foo").greater_than(Datum::long(1))),
+            None,
+        ];
+        for (actual, expected) in predicates.into_iter().zip(expected_predicates) {
+            assert_eq!(actual, expected);
+        }
+
+        let sql = "length(bar) = 1 and foo > 1";
+        let predicates = convert_to_iceberg_predicates(sql);
+        let expected_predicates = [
+            None,
+            Some(Reference::new("foo").greater_than(Datum::long(1))),
+        ];
+        assert_eq!(predicates, expected_predicates);
+    }
+
+    #[test]
+    fn test_predicates_conversion_with_and_condition_both_unsupported() {
+        let sql = "foo in (1, 2, foo) and length(bar) = 1";
+        let predicates = convert_to_iceberg_predicates(sql);
+        let expected_predicates = [None, None];
+        assert_eq!(predicates, expected_predicates);
+    }
+
+    #[test]
+    fn test_predicates_conversion_with_or_condition_supported() {
+        let sql = "foo > 1 or bar = 'test'";
+        let predicates = convert_to_iceberg_predicates(sql);
+        let expected_predicates = [Some(Predicate::or(
+            Reference::new("foo").greater_than(Datum::long(1)),
+            Reference::new("bar").equal_to(Datum::string("test")),
+        ))];
+        assert_eq!(predicates, expected_predicates);
+    }
+
+    #[test]
+    fn test_predicates_conversion_with_or_condition_unsupported() {
+        let sql = "foo > 1 or length(bar) = 1";
+        let predicates = convert_to_iceberg_predicates(sql);
+        let expected_predicates = [None];
+        assert_eq!(predicates, expected_predicates);
     }
 }
