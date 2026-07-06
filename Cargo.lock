@@ -1630,7 +1630,7 @@ dependencies = [
 [[package]]
 name = "datafusion"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "arrow-schema",
@@ -1682,7 +1682,7 @@ dependencies = [
 [[package]]
 name = "datafusion-catalog"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1706,7 +1706,7 @@ dependencies = [
 [[package]]
 name = "datafusion-catalog-listing"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1728,7 +1728,7 @@ dependencies = [
 [[package]]
 name = "datafusion-cli"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1755,7 +1755,7 @@ dependencies = [
 [[package]]
 name = "datafusion-common"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "ahash",
  "apache-avro",
@@ -1781,7 +1781,7 @@ dependencies = [
 [[package]]
 name = "datafusion-common-runtime"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "futures",
  "log",
@@ -1791,7 +1791,7 @@ dependencies = [
 [[package]]
 name = "datafusion-datasource"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-compression",
@@ -1825,7 +1825,7 @@ dependencies = [
 [[package]]
 name = "datafusion-datasource-arrow"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "arrow-ipc",
@@ -1848,7 +1848,7 @@ dependencies = [
 [[package]]
 name = "datafusion-datasource-avro"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "apache-avro",
  "arrow",
@@ -1867,7 +1867,7 @@ dependencies = [
 [[package]]
 name = "datafusion-datasource-csv"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1889,7 +1889,7 @@ dependencies = [
 [[package]]
 name = "datafusion-datasource-json"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1911,7 +1911,7 @@ dependencies = [
 [[package]]
 name = "datafusion-datasource-parquet"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1941,12 +1941,12 @@ dependencies = [
 [[package]]
 name = "datafusion-doc"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 
 [[package]]
 name = "datafusion-execution"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "arrow-buffer",
@@ -1968,7 +1968,7 @@ dependencies = [
 [[package]]
 name = "datafusion-expr"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -1990,7 +1990,7 @@ dependencies = [
 [[package]]
 name = "datafusion-expr-common"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2002,7 +2002,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "arrow-buffer",
@@ -2033,7 +2033,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions-aggregate"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "ahash",
  "arrow",
@@ -2054,7 +2054,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions-aggregate-common"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "ahash",
  "arrow",
@@ -2066,7 +2066,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions-nested"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "arrow-ord",
@@ -2090,7 +2090,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions-table"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -2105,7 +2105,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions-window"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2122,7 +2122,7 @@ dependencies = [
 [[package]]
 name = "datafusion-functions-window-common"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "datafusion-common",
  "datafusion-physical-expr-common",
@@ -2131,7 +2131,7 @@ dependencies = [
 [[package]]
 name = "datafusion-macros"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "datafusion-doc",
  "quote",
@@ -2141,7 +2141,7 @@ dependencies = [
 [[package]]
 name = "datafusion-optimizer"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "chrono",
@@ -2160,7 +2160,7 @@ dependencies = [
 [[package]]
 name = "datafusion-physical-expr"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "ahash",
  "arrow",
@@ -2182,7 +2182,7 @@ dependencies = [
 [[package]]
 name = "datafusion-physical-expr-adapter"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2196,7 +2196,7 @@ dependencies = [
 [[package]]
 name = "datafusion-physical-expr-common"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "ahash",
  "arrow",
@@ -2212,7 +2212,7 @@ dependencies = [
 [[package]]
 name = "datafusion-physical-optimizer"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2230,7 +2230,7 @@ dependencies = [
 [[package]]
 name = "datafusion-physical-plan"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "ahash",
  "arrow",
@@ -2261,7 +2261,7 @@ dependencies = [
 [[package]]
 name = "datafusion-pruning"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -2276,7 +2276,7 @@ dependencies = [
 [[package]]
 name = "datafusion-session"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "async-trait",
  "datafusion-common",
@@ -2289,7 +2289,7 @@ dependencies = [
 [[package]]
 name = "datafusion-spark"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "bigdecimal",
@@ -2315,7 +2315,7 @@ dependencies = [
 [[package]]
 name = "datafusion-sql"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "bigdecimal",
@@ -2333,7 +2333,7 @@ dependencies = [
 [[package]]
 name = "datafusion-sqllogictest"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "arrow",
  "async-trait",
@@ -2358,7 +2358,7 @@ dependencies = [
 [[package]]
 name = "datafusion-substrait"
 version = "52.3.0"
-source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#302102ff65ee7605ebe93ef4cba1ef999fbf4bc0"
+source = "git+https://github.com/tarantool/datafusion.git?branch=release-52.3.0#d41b2e9347764b5b4e884f1bd60c05b25dbcccfb"
 dependencies = [
  "async-recursion",
  "async-trait",
