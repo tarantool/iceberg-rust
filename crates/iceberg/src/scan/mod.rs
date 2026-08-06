@@ -152,6 +152,12 @@ impl<'a> TableScanBuilder<'a> {
         self
     }
 
+    /// Sets the manifest file concurrency limit for this scan
+    pub fn with_manifest_file_concurrency_limit(mut self, limit: usize) -> Self {
+        self.concurrency_limit_manifest_files = limit;
+        self
+    }
+
     /// Determines whether to enable row group filtering.
     /// When enabled, if a read is performed with a filter predicate,
     /// then the metadata for each row group in the parquet file is
