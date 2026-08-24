@@ -66,9 +66,9 @@ cfg-if = "1"
 chrono = "0.4.41"
 clap = { version = "4.5.48", features = ["derive", "cargo"] }
 dashmap = "6"
-datafusion = { git = "https://github.com/tarantool/datafusion.git", rev = "38b2f401b3491e71da19e41542c84b4fb6f75e47" }
-datafusion-cli = { git = "https://github.com/tarantool/datafusion.git", rev = "38b2f401b3491e71da19e41542c84b4fb6f75e47" }
-datafusion-sqllogictest = { git = "https://github.com/tarantool/datafusion.git", rev = "38b2f401b3491e71da19e41542c84b4fb6f75e47" }
+datafusion = { git = "https://github.com/tarantool/datafusion.git", rev = "3722229edd77d563e2411e570c68096075430d89" }
+datafusion-cli = { git = "https://github.com/tarantool/datafusion.git", rev = "3722229edd77d563e2411e570c68096075430d89" }
+datafusion-sqllogictest = { git = "https://github.com/tarantool/datafusion.git", rev = "3722229edd77d563e2411e570c68096075430d89" }
 derive_builder = "0.20"
 dirs = "6"
 enum-ordinalize = "4.3.0"
