@@ -41,6 +41,11 @@ pub const SQL_CATALOG_PROP_URI: &str = "uri";
 pub const SQL_CATALOG_PROP_WAREHOUSE: &str = "warehouse";
 /// catalog sql bind style
 pub const SQL_CATALOG_PROP_BIND_STYLE: &str = "sql_bind_style";
+/// SQLite busy timeout in milliseconds: how long a statement waits for a lock
+/// held by another connection (e.g. of another process sharing the database)
+/// before failing with `database is locked`. Ignored by the other databases.
+/// The sqlx default (5s) is used if it is not set.
+pub const SQL_CATALOG_PROP_SQLITE_BUSY_TIMEOUT_MS: &str = "sqlite.busy-timeout-ms";
 
 static CATALOG_TABLE_NAME: &str = "iceberg_tables";
 static CATALOG_FIELD_CATALOG_NAME: &str = "catalog_name";
@@ -262,11 +267,42 @@ impl SqlCatalog {
             .get("pool.test-before-acquire")
             .map(|v| v.parse().unwrap())
             .unwrap_or(TEST_BEFORE_ACQUIRE);
+        let sqlite_busy_timeout_ms: Option<u64> = config
+            .props
+            .get(SQL_CATALOG_PROP_SQLITE_BUSY_TIMEOUT_MS)
+            .map(|v| {
+                v.parse().map_err(|err| {
+                    Error::new(
+                        ErrorKind::DataInvalid,
+                        format!(
+                            "`{SQL_CATALOG_PROP_SQLITE_BUSY_TIMEOUT_MS}` must be a number \
+                            of milliseconds, got `{v}`"
+                        ),
+                    )
+                    .with_source(err)
+                })
+            })
+            .transpose()?;
 
-        let pool = AnyPoolOptions::new()
+        let mut pool_options = AnyPoolOptions::new()
             .max_connections(max_connections)
             .idle_timeout(Duration::from_secs(idle_timeout))
-            .test_before_acquire(test_before_acquire)
+            .test_before_acquire(test_before_acquire);
+        if let Some(busy_timeout_ms) = sqlite_busy_timeout_ms {
+            // The `Any` driver has no busy timeout option, so it is set by the
+            // pragma, which configures the same SQLite busy handler.
+            pool_options = pool_options.after_connect(move |conn, _| {
+                Box::pin(async move {
+                    if conn.backend_name() == "SQLite" {
+                        sqlx::query(&format!("PRAGMA busy_timeout = {busy_timeout_ms}"))
+                            .execute(conn)
+                            .await?;
+                    }
+                    Ok(())
+                })
+            });
+        }
+        let pool = pool_options
             .connect(&config.uri)
             .await
             .map_err(from_sqlx_error)?;
@@ -1013,6 +1049,7 @@ mod tests {
     use std::collections::{HashMap, HashSet};
     use std::hash::Hash;
     use std::sync::Arc;
+    use std::time::{Duration, Instant};
 
     use iceberg::io::LocalFsStorageFactory;
     use iceberg::spec::{NestedField, PartitionSpec, PrimitiveType, Schema, SortOrder, Type};
@@ -1020,14 +1057,15 @@ mod tests {
     use iceberg::{Catalog, CatalogBuilder, Namespace, NamespaceIdent, TableCreation, TableIdent};
     use itertools::Itertools;
     use regex::Regex;
+    use sqlx::Connection;
     use sqlx::migrate::MigrateDatabase;
     use tempfile::TempDir;
 
     use crate::catalog::{
-        NAMESPACE_LOCATION_PROPERTY_KEY, SQL_CATALOG_PROP_BIND_STYLE, SQL_CATALOG_PROP_URI,
-        SQL_CATALOG_PROP_WAREHOUSE,
+        NAMESPACE_LOCATION_PROPERTY_KEY, SQL_CATALOG_PROP_BIND_STYLE,
+        SQL_CATALOG_PROP_SQLITE_BUSY_TIMEOUT_MS, SQL_CATALOG_PROP_URI, SQL_CATALOG_PROP_WAREHOUSE,
     };
-    use crate::{SqlBindStyle, SqlCatalogBuilder};
+    use crate::{SqlBindStyle, SqlCatalog, SqlCatalogBuilder};
 
     const UUID_REGEX_STR: &str = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
@@ -1070,6 +1108,87 @@ mod tests {
             .load(&name, props)
             .await
             .unwrap()
+    }
+
+    /// Load a catalog of the SQLite database `uri` with the busy timeout
+    /// property `busy_timeout_ms`, if any.
+    async fn load_sqlite_catalog(
+        uri: &str,
+        busy_timeout_ms: Option<&str>,
+    ) -> iceberg::Result<SqlCatalog> {
+        let mut props = HashMap::from([
+            (SQL_CATALOG_PROP_URI.to_string(), uri.to_string()),
+            (SQL_CATALOG_PROP_WAREHOUSE.to_string(), temp_path()),
+            (
+                SQL_CATALOG_PROP_BIND_STYLE.to_string(),
+                SqlBindStyle::QMark.to_string(),
+            ),
+        ]);
+        if let Some(busy_timeout_ms) = busy_timeout_ms {
+            props.insert(
+                SQL_CATALOG_PROP_SQLITE_BUSY_TIMEOUT_MS.to_string(),
+                busy_timeout_ms.to_string(),
+            );
+        }
+        SqlCatalogBuilder::default()
+            .with_storage_factory(Arc::new(LocalFsStorageFactory))
+            .load("iceberg", props)
+            .await
+    }
+
+    /// Create a SQLite database, returns its URI.
+    async fn new_sqlite_database() -> String {
+        let uri = format!("sqlite:{}", temp_path());
+        sqlx::Sqlite::create_database(&uri).await.unwrap();
+        uri
+    }
+
+    #[tokio::test]
+    async fn test_sqlite_busy_timeout_is_set() {
+        let uri = new_sqlite_database().await;
+        let catalog = load_sqlite_catalog(&uri, Some("1234")).await.unwrap();
+        let busy_timeout: i64 = sqlx::query_scalar("PRAGMA busy_timeout")
+            .fetch_one(&catalog.connection)
+            .await
+            .unwrap();
+        assert_eq!(busy_timeout, 1234);
+    }
+
+    #[tokio::test]
+    async fn test_sqlite_busy_timeout_of_locked_database() {
+        let uri = new_sqlite_database().await;
+        // Another connection (e.g. of another process) holds the lock.
+        let mut locker = sqlx::SqliteConnection::connect(&uri).await.unwrap();
+        sqlx::query("BEGIN EXCLUSIVE")
+            .execute(&mut locker)
+            .await
+            .unwrap();
+
+        // Fails after the busy timeout, not the default one (5s).
+        let start = Instant::now();
+        let err = load_sqlite_catalog(&uri, Some("100")).await.unwrap_err();
+        assert!(start.elapsed() < Duration::from_secs(3), "{err}");
+        assert!(err.to_string().contains("database is locked"), "{err}");
+
+        // Succeeds if the lock is released within the busy timeout.
+        let release = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            sqlx::query("COMMIT").execute(&mut locker).await.unwrap();
+        });
+        load_sqlite_catalog(&uri, Some("10000")).await.unwrap();
+        release.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_sqlite_busy_timeout_must_be_a_number() {
+        let uri = new_sqlite_database().await;
+        let err = load_sqlite_catalog(&uri, Some("5s")).await.unwrap_err();
+        assert_eq!(err.kind(), iceberg::ErrorKind::DataInvalid);
+        assert!(
+            err.to_string()
+                .contains(SQL_CATALOG_PROP_SQLITE_BUSY_TIMEOUT_MS),
+            "{err}"
+        );
     }
 
     async fn create_namespace<C: Catalog>(catalog: &C, namespace_ident: &NamespaceIdent) {
